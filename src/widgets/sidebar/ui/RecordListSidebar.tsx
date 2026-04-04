@@ -1,14 +1,13 @@
 'use client';
 
-import { useState } from 'react';
 import { Search, ArrowLeft } from 'lucide-react';
 import { Input } from '@/src/shared/ui/input';
 import { Button } from '@/src/shared/ui/button';
 import { cn } from '@/src/shared/lib/utils';
-import { useMapStore } from '@/src/shared/model/useMapStore';
 import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
 import { RecordItem } from '@/src/entities/record/ui/RecordItem';
-import { PlaceItem, Place } from '@/src/entities/record/ui/PlaceItem';
+import { PlaceItem } from '@/src/entities/record/ui/PlaceItem';
+import { useSearchPlaces } from '@/src/features/record/model/useSearchPlaces';
 
 interface RecordListSidebarProps {
   className?: string;
@@ -18,103 +17,28 @@ interface RecordListSidebarProps {
  * 지도에 표시된 기록 목록과 장소 검색 기능을 제공하는 사이드바 위젯입니다. (PC용)
  */
 export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const [searchResults, setSearchResults] = useState<Place[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isMoreLoading, setIsMoreLoading] = useState(false);
-  const [startIndex, setStartIndex] = useState(1);
+  // 공통 검색 로직 사용
+  const { 
+    searchTerm, 
+    setSearchTerm, 
+    searchResults, 
+    isLoading, 
+    isMoreLoading, 
+    search, 
+    loadMore, 
+    selectPlace, 
+    reset 
+  } = useSearchPlaces();
+
+  const isSearchMode = searchTerm !== '' || searchResults.length > 0;
 
   // 스토어 구독
-  const setCenter = useMapStore((state) => state.setCenter);
-  const setSelectedLocation = useMapStore((state) => state.setSelectedLocation);
-  
   const records = useRecordStore((state) => state.records);
   const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
 
-  // 장소 검색 실행
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchTerm.trim()) return;
-
-    setIsLoading(true);
-    setIsSearchMode(true);
-    setStartIndex(1);
-
-    try {
-      const response = await fetch(
-        `/api/places/search?query=${encodeURIComponent(searchTerm)}&start=1`,
-      );
-
-      if (!response.ok) {
-        throw new Error('검색 서비스에 문제가 발생했습니다.');
-      }
-
-      const data = await response.json();
-      setSearchResults(data.items || []);
-    } catch (error) {
-      console.error('Search failed:', error);
-      alert('검색 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 추가 결과 로드 (페이지네이션)
-  const handleLoadMore = async () => {
-    if (isMoreLoading) return;
-
-    const nextStart = startIndex + 5;
-    if (nextStart > 1000) {
-      alert('더 이상 검색 결과를 가져올 수 없습니다. (최대 1,000개)');
-      return;
-    }
-
-    setIsMoreLoading(true);
-
-    try {
-      const response = await fetch(
-        `/api/places/search?query=${encodeURIComponent(searchTerm)}&start=${nextStart}`,
-      );
-
-      if (!response.ok) {
-        throw new Error('추가 검색 결과를 가져오는 중 오류가 발생했습니다.');
-      }
-
-      const data = await response.json();
-      const newItems = data.items || [];
-
-      if (newItems.length > 0) {
-        setSearchResults((prev) => [...prev, ...newItems]);
-        setStartIndex(nextStart);
-      } else {
-        alert('더 이상의 검색 결과가 없습니다.');
-      }
-    } catch (error) {
-      console.error('Load more failed:', error);
-      alert('추가 결과를 가져오는데 실패했습니다.');
-    } finally {
-      setIsMoreLoading(false);
-    }
-  };
-
-  // 검색 모드 종료
-  const handleBack = () => {
-    setIsSearchMode(false);
-    setSearchTerm('');
-    setSearchResults([]);
-    setStartIndex(1);
-  };
-
-  // 장소 클릭 시 지도 이동 및 핑 표시
-  const handlePlaceClick = (place: Place) => {
-    const lng = parseInt(place.mapx, 10) / 10000000;
-    const lat = parseInt(place.mapy, 10) / 10000000;
-
-    if (isNaN(lat) || isNaN(lng)) return;
-
-    setCenter(lat, lng);
-    setSelectedLocation({ lat, lng });
+    search(searchTerm);
   };
 
   return (
@@ -132,7 +56,7 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
               variant="ghost"
               size="icon"
               className="-ml-2 size-8 shrink-0 text-slate-500"
-              onClick={handleBack}
+              onClick={reset}
             >
               <ArrowLeft className="size-5" />
             </Button>
@@ -142,7 +66,7 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
           </h1>
         </div>
 
-        <form onSubmit={handleSearch} className="relative">
+        <form onSubmit={handleSearchSubmit} className="relative">
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
           <Input
             placeholder="장소나 주소 검색..."
@@ -167,7 +91,7 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
                       <PlaceItem
                         key={`${place.mapx}-${place.mapy}-${idx}`}
                         place={place}
-                        onClick={handlePlaceClick}
+                        onClick={selectPlace}
                       />
                     ))}
 
@@ -176,7 +100,7 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
                         <Button
                           variant="outline"
                           className="h-12 w-full rounded-xl border-2 border-blue-100 bg-white text-[14px] font-extrabold text-blue-600 shadow-md hover:bg-blue-50 active:scale-95"
-                          onClick={handleLoadMore}
+                          onClick={loadMore}
                           disabled={isMoreLoading}
                         >
                           {isMoreLoading ? '기록을 불러오는 중...' : '결과 더 보기'}

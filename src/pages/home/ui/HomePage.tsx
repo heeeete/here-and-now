@@ -6,7 +6,7 @@ import { CreateRecordModal } from '@/src/features/record/ui/CreateRecordModal';
 import { RecordDetailModal } from '@/src/features/record/ui/RecordDetailModal';
 import { RecordListSidebar } from '@/src/widgets/sidebar/ui/RecordListSidebar';
 import { MobileSearchOverlay } from '@/src/features/record/ui/MobileSearchOverlay';
-import { MobileRecordCarousel } from '@/src/entities/record/ui/MobileRecordCarousel';
+import { MobileRecordCarousel } from '@/src/widgets/record-carousel/ui/MobileRecordCarousel';
 import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
 import { useMapStore } from '@/src/shared/model/useMapStore';
 import { debounce } from '@/src/shared/lib/utils';
