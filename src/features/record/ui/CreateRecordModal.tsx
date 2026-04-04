@@ -43,7 +43,7 @@ export const CreateRecordModal = ({ onSuccess }: CreateRecordModalProps) => {
 
   return (
     <Dialog open={!!selectedLocation} onOpenChange={(open) => !open && setSelectedLocation(null)}>
-      <DialogContent className="fixed top-auto right-4 bottom-4 left-auto translate-x-0 translate-y-0 sm:max-w-sm">
+      <DialogContent className="fixed bottom-4 left-1/2 top-auto w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 sm:max-w-sm md:left-auto md:right-4 md:translate-x-0">
         <div className="max-h-[80vh] overflow-y-auto pr-2">
           <DialogHeader>
             <DialogTitle>지금 여기 기록하기</DialogTitle>

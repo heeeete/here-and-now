@@ -13,6 +13,7 @@ import {
 } from '@/src/shared/ui/alert-dialog';
 import { Input } from '@/src/shared/ui/input';
 import { cn } from '@/src/shared/lib/utils';
+import { useMobile } from '@/src/shared/lib/hooks/useMobile';
 
 interface AuthPasswordModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ export const AuthPasswordModal = ({
   description,
   isDelete = false,
 }: AuthPasswordModalProps) => {
+  const isMobile = useMobile();
   const [password, setPassword] = useState('');
 
   const handleConfirm = () => {
@@ -47,7 +49,7 @@ export const AuthPasswordModal = ({
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="fixed top-auto right-4 bottom-4 left-auto w-[320px] translate-x-0 translate-y-0 sm:max-w-[320px]">
+      <AlertDialogContent className="fixed top-auto right-4 bottom-4 left-1/2 w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 sm:max-w-[320px] md:left-auto md:right-4 md:translate-x-0">
         <AlertDialogHeader>
           <AlertDialogTitle className={cn(isDelete ? "text-red-600" : "text-slate-900")}>
             {title}
@@ -66,7 +68,7 @@ export const AuthPasswordModal = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
-              autoFocus
+              autoFocus={!isMobile}
             />
           </div>
         </div>

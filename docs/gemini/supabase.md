@@ -11,7 +11,7 @@
 | `created_at` | TIMESTAMPTZ | 생성 일시 |
 | `latitude` | FLOAT8 | 위도 |
 | `longitude` | FLOAT8 | 경도 |
-| `comment` | TEXT | 한 줄 코멘트 (최대 50자) |
+| `comment` | TEXT | 한 줄 코멘트 (최대 100자) |
 | `image_url` | TEXT | (선택) 첨부 이미지 URL |
 | `password` | TEXT | 익명 수정/삭제를 위한 평문 비밀번호 |
 | `expires_at` | TIMESTAMPTZ | 만료 예정 시각 (생성 시 +24시간) |

@@ -100,7 +100,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
   return (
     <>
       <Dialog open={!!selectedRecordId} onOpenChange={(open) => !open && setSelectedRecordId(null)}>
-        <DialogContent className="fixed top-auto right-4 bottom-4 left-auto w-[320px] translate-x-0 translate-y-0 overflow-hidden p-0 sm:max-w-[320px]">
+        <DialogContent className="fixed top-auto right-4 bottom-4 left-1/2 w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 overflow-hidden p-0 sm:max-w-[320px] md:left-auto md:right-4 md:translate-x-0">
           <div className="flex flex-col">
             <div className="p-5 pb-0">
               <DialogHeader className="gap-1.5">
