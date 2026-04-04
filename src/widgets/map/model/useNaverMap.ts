@@ -47,7 +47,7 @@ export const useNaverMap = (
       // 지도 유휴(Idle) 상태 이벤트 (이동/확대 완료 시)
       const handleIdle = () => {
         if (onBoundsChangeRef.current) {
-          const bounds = mapInstance.getBounds();
+          const bounds = mapInstance.getBounds() as naver.maps.LatLngBounds;
           const sw = bounds.getSW();
           const ne = bounds.getNE();
           onBoundsChangeRef.current({
