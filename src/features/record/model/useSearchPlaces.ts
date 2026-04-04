@@ -11,6 +11,7 @@ export const useSearchPlaces = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isMoreLoading, setIsMoreLoading] = useState(false);
   const [startIndex, setStartIndex] = useState(1);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const setCenter = useMapStore((state) => state.setCenter);
   const setSelectedLocation = useMapStore((state) => state.setSelectedLocation);
@@ -20,6 +21,7 @@ export const useSearchPlaces = () => {
     if (!query.trim()) return;
 
     setIsLoading(true);
+    setHasSearched(true);
     setSearchTerm(query);
     setStartIndex(1);
 
@@ -80,6 +82,7 @@ export const useSearchPlaces = () => {
     setSearchTerm('');
     setSearchResults([]);
     setStartIndex(1);
+    setHasSearched(false);
   }, []);
 
   return {
@@ -91,6 +94,7 @@ export const useSearchPlaces = () => {
     search,
     loadMore,
     selectPlace,
-    reset
+    reset,
+    hasSearched
   };
 };

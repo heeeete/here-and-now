@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: '지금여기 | 실시간 현장 상황 공유',
-  description: '지도 위에 지금 이 순간의 현장 상황과 분위기를 공유하세요.',
+  title: '지금여기 | 지도에 기록 남기기',
+  description: '지도 위에 지금 기록을 공유하세요.',
 };
 
 export default function RootLayout({

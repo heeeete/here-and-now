@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
 import { Button } from '@/src/shared/ui/button';
 import { fetchRecordById } from '@/src/entities/record/api/fetch-record-by-id';
@@ -31,7 +31,6 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
   const refreshRecords = useRecordStore((state) => state.refreshRecords);
 
   const [initialRecord, setInitialRecord] = useState<Record | null>(null);
-  const [timeLeft, setTimeLeft] = useState<string>('');
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'edit' | 'delete' | null>(null);
@@ -45,15 +44,18 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
   );
 
   // 상세 데이터 초기 패칭
+  const fetchDetail = useCallback(async () => {
+    if (selectedRecordId) {
+      const data = await fetchRecordById(selectedRecordId);
+      setInitialRecord(data);
+    }
+  }, [selectedRecordId]);
+
   useEffect(() => {
     if (selectedRecordId && !isEditModalOpen) {
-      const fetchDetail = async () => {
-        const data = await fetchRecordById(selectedRecordId);
-        setInitialRecord(data);
-      };
       void fetchDetail();
     }
-  }, [selectedRecordId, isEditModalOpen]);
+  }, [selectedRecordId, isEditModalOpen, fetchDetail]);
 
   const handleReportComplaint = async () => {
     if (!selectedRecordId) return;
@@ -81,8 +83,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
         void refreshRecords();
         onRefresh?.();
       } else if (authMode === 'edit') {
-        const { postVerifyPassword } =
-          await import('@/src/entities/record/api/post-verify-password');
+        const { postVerifyPassword } = await import('@/src/entities/record/api/post-verify-password');
         await postVerifyPassword(selectedRecordId, password);
         setVerifiedPassword(password);
         setIsAuthModalOpen(false);
@@ -132,12 +133,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
                     onClick={() => handleReaction(item.type)}
                   >
                     <span className="text-lg leading-none">{item.emoji}</span>
-                    <span
-                      className={cn(
-                        'text-[10px] leading-none font-bold',
-                        isActive ? 'text-white' : 'text-slate-500',
-                      )}
-                    >
+                    <span className={cn('text-[10px] font-bold leading-none', isActive ? 'text-white' : 'text-slate-500')}>
                       {count}
                     </span>
                   </Button>
@@ -146,35 +142,11 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
             </div>
 
             <div className="flex flex-row items-stretch gap-0 border-t border-slate-100 bg-slate-50/30 p-0 sm:justify-start">
-              <Button
-                variant="ghost"
-                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-500"
-                onClick={handleReportComplaint}
-              >
-                신고
-              </Button>
+              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-500" onClick={handleReportComplaint}>신고</Button>
               <div className="w-px bg-slate-100" />
-              <Button
-                variant="ghost"
-                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-slate-900"
-                onClick={() => {
-                  setAuthMode('edit');
-                  setIsAuthModalOpen(true);
-                }}
-              >
-                수정
-              </Button>
+              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-slate-900" onClick={() => { setAuthMode('edit'); setIsAuthModalOpen(true); }}>수정</Button>
               <div className="w-px bg-slate-100" />
-              <Button
-                variant="ghost"
-                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                onClick={() => {
-                  setAuthMode('delete');
-                  setIsAuthModalOpen(true);
-                }}
-              >
-                삭제
-              </Button>
+              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-600" onClick={() => { setAuthMode('delete'); setIsAuthModalOpen(true); }}>삭제</Button>
             </div>
           </div>
         </DialogContent>
@@ -196,13 +168,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
         onOpenChange={setIsEditModalOpen}
         onSuccess={() => {
           setIsEditModalOpen(false);
-          if (selectedRecordId) {
-            const fetchUpdated = async () => {
-              const data = await fetchRecordById(selectedRecordId);
-              setInitialRecord(data);
-            };
-            void fetchUpdated();
-          }
+          void fetchDetail();
           void refreshRecords();
           onRefresh?.();
         }}

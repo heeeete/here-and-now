@@ -2,6 +2,7 @@
 
 import { Record } from '../model/types';
 import { cn } from '@/src/shared/lib/utils';
+import { useMapStore } from '@/src/shared/model/useMapStore';
 
 interface RecordItemProps {
   record: Record;
@@ -33,6 +34,8 @@ const ReactionBadge = ({ emoji, count, className }: ReactionBadgeProps) => {
 };
 
 export const RecordItem = ({ record, onClick, variant = 'list', className }: RecordItemProps) => {
+  const setCenter = useMapStore((state) => state.setCenter);
+  
   const date = new Date(record.created_at);
 
   const timeString = new Intl.DateTimeFormat('ko-KR', {
@@ -42,9 +45,17 @@ export const RecordItem = ({ record, onClick, variant = 'list', className }: Rec
 
   const isCard = variant === 'card';
 
+  const handleItemClick = () => {
+    // 1. 지도 이동 (모바일 카드일 경우 모달을 고려해 오프셋 150px 적용)
+    setCenter(record.latitude, record.longitude, isCard ? 150 : 0);
+    
+    // 2. 상세 모달 오픈 등 기존 액션 수행
+    onClick(record.id);
+  };
+
   return (
     <button
-      onClick={() => onClick(record.id)}
+      onClick={handleItemClick}
       className={cn(
         'w-full text-left transition-all duration-200 active:scale-[0.985]',
         isCard

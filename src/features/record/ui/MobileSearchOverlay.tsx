@@ -17,7 +17,8 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
     searchResults, 
     isLoading, 
     search, 
-    selectPlace 
+    selectPlace,
+    hasSearched
   } = useSearchPlaces();
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -46,7 +47,7 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
           <ArrowLeft className="size-6" />
         </Button>
         <form onSubmit={handleSearchSubmit} className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
           <Input
             autoFocus
             placeholder="장소나 주소 검색..."
@@ -74,7 +75,7 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
           </div>
         ) : (
           <div className="py-20 text-center text-slate-400">
-            {searchTerm ? '검색 결과가 없습니다.' : '어디로 이동할까요?'}
+            {hasSearched ? '검색 결과가 없습니다.' : '어디로 이동할까요?'}
           </div>
         )}
       </div>
