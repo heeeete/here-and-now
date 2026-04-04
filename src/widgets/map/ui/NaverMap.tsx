@@ -5,6 +5,8 @@ import { Locate } from 'lucide-react';
 import { NaverMapProps } from '../model/types';
 import { useNaverMap } from '../model/useNaverMap';
 import { useMarkers } from '../model/useMarkers';
+import { useMapStore } from '@/src/shared/model/useMapStore';
+import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
 
 /**
  * NaverMap 위젯
@@ -12,30 +14,38 @@ import { useMarkers } from '../model/useMarkers';
  * - 마커 및 클러스터링 관리 (useMarkers)
  */
 export const NaverMap = ({
-  reports = [],
-  selectedLocation,
   onMapClick,
   onMarkerClick,
   onBoundsChange,
   className,
-}: NaverMapProps) => {
+}: Omit<NaverMapProps, 'records' | 'selectedLocation'>) => {
+  // 스토어에서 상태 직접 구독
+  const { center: storeCenter, selectedLocation, setSelectedLocation } = useMapStore();
+  const { records, setSelectedRecordId } = useRecordStore();
+
   // 1. 지도 인스턴스 초기화 및 기본 이벤트 관리
   const { mapRef, map, moveToCurrentLocation } = useNaverMap(
-    onMapClick,
-    onBoundsChange,
+    (lat, lng) => {
+      setSelectedLocation({ lat, lng });
+      onMapClick?.(lat, lng);
+    },
+    onBoundsChange
   );
 
   // 2. 마커 및 클러스터 관리
-  const { renderReports, updateMyLocationMarker, updateClickMarker } = useMarkers(
+  const { renderRecords, updateMyLocationMarker, updateClickMarker } = useMarkers(
     map,
-    onMarkerClick
+    (id) => {
+      setSelectedRecordId(id);
+      onMarkerClick?.(id);
+    }
   );
 
   // 3. 지도 유휴(Idle) 상태 및 줌 변경 시 마커 재렌더링
   useEffect(() => {
     if (!map) return;
 
-    const handleIdle = () => renderReports(reports);
+    const handleIdle = () => renderRecords(records);
     const idleListener = naver.maps.Event.addListener(map, 'idle', handleIdle);
     const zoomListener = naver.maps.Event.addListener(map, 'zoom_changed', handleIdle);
 
@@ -46,9 +56,18 @@ export const NaverMap = ({
       naver.maps.Event.removeListener(idleListener);
       naver.maps.Event.removeListener(zoomListener);
     };
-  }, [map, reports, renderReports]);
+  }, [map, records, renderRecords]);
 
-  // 4. 선택된 위치(클릭 지점) 변경 시 마커 업데이트
+  // 4. 전역 스토어의 중심점 변경 시 지도 이동
+  useEffect(() => {
+    if (map && storeCenter) {
+      const newCenter = new naver.maps.LatLng(storeCenter.lat, storeCenter.lng);
+      map.setCenter(newCenter);
+      map.setZoom(16, true);
+    }
+  }, [map, storeCenter]);
+
+  // 5. 선택된 위치(클릭 지점) 변경 시 마커 업데이트
   useEffect(() => {
     if (map) {
       updateClickMarker(
@@ -58,7 +77,7 @@ export const NaverMap = ({
     }
   }, [selectedLocation, map, updateClickMarker]);
 
-  // 5. 현재 위치로 이동 및 마커 업데이트 핸들러
+  // 6. 현재 위치로 이동 및 마커 업데이트 핸들러
   const handleMoveToCurrentLocation = () => {
     moveToCurrentLocation((latlng) => {
       updateMyLocationMarker(latlng);

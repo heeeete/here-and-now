@@ -19,7 +19,7 @@ export const MARKER_TEMPLATES = {
     </style>
   `,
 
-  // 클릭 지점 마커 (제보 작성 시)
+  // 클릭 지점 마커 (기록 작성 시)
   clickLocation: `
     <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: rgba(59, 130, 246, 0.2); border: 2px solid #3b82f6; border-radius: 50%; animation: clickPulse 1.5s infinite;">
       <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
@@ -41,12 +41,12 @@ export const MARKER_TEMPLATES = {
     </div>
   `,
 
-  // 개별 제보 마커 (말풍선)
-  reportBubble: (comment: string) => {
+  // 개별 기록 마커 (말풍선)
+  recordBubble: (comment: string) => {
     const displayComment = comment.length > 12 ? `${comment.slice(0, 12)}…` : comment;
 
     return `
-    <div class="report-marker">
+    <div class="record-marker">
       <div class="speech-bubble">
         ${displayComment}
       </div>

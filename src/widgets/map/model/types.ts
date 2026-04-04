@@ -1,4 +1,4 @@
-export interface Report {
+export interface Record {
   id: string;
   latitude: number;
   longitude: number;
@@ -13,10 +13,10 @@ export interface MapBounds {
 }
 
 export interface NaverMapProps {
-  reports?: Report[];
+  records?: Record[];
   selectedLocation?: { lat: number; lng: number } | null;
   onMapClick?: (lat: number, lng: number) => void;
-  onMarkerClick?: (reportId: string) => void;
+  onMarkerClick?: (recordId: string) => void;
   onBoundsChange?: (bounds: MapBounds) => void;
   className?: string;
 }

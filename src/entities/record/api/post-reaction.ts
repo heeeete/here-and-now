@@ -1,16 +1,16 @@
 import { createClient } from '@/src/shared/lib/supabase/client';
 
 /**
- * 특정 제보에 반응을 남깁니다.
+ * 특정 기록에 반응을 남깁니다.
  */
-export async function postReaction(reportId: string, type: 'helpful' | 'still_valid' | 'ended') {
+export async function postReaction(recordId: string, type: 'helpful' | 'still_valid' | 'ended') {
   const supabase = createClient();
 
   const { data, error } = await supabase
     .from('reactions')
     .insert([
       {
-        report_id: reportId,
+        record_id: recordId,
         type,
       },
     ])

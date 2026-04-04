@@ -43,41 +43,42 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          report_id: string
+          record_id: string
           type: string
         }
         Insert: {
           created_at?: string
           id?: string
-          report_id: string
+          record_id: string
           type: string
         }
         Update: {
           created_at?: string
           id?: string
-          report_id?: string
+          record_id?: string
           type?: string
         }
         Relationships: [
           {
             foreignKeyName: "reactions_report_id_fkey"
-            columns: ["report_id"]
+            columns: ["record_id"]
             isOneToOne: false
-            referencedRelation: "report_summary"
+            referencedRelation: "record_summary"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "reactions_report_id_fkey"
-            columns: ["report_id"]
+            columns: ["record_id"]
             isOneToOne: false
-            referencedRelation: "reports"
+            referencedRelation: "records"
             referencedColumns: ["id"]
-          },
+          }
         ]
       }
-      reports: {
+      records: {
         Row: {
           comment: string
+          complaint_count: number
           created_at: string
           expires_at: string
           id: string
@@ -85,37 +86,37 @@ export type Database = {
           latitude: number
           longitude: number
           password: string
-          report_count: number
         }
         Insert: {
           comment: string
+          complaint_count?: number
           created_at?: string
           expires_at?: string
           id?: string
           image_url?: string | null
-          latitude: number | null
-          longitude: number | null
+          latitude: number
+          longitude: number
           password: string
-          report_count?: number
         }
         Update: {
           comment?: string
+          complaint_count?: number
           created_at?: string
           expires_at?: string
           id?: string
           image_url?: string | null
-          latitude?: number | null
-          longitude?: number | null
+          latitude?: number
+          longitude?: number
           password?: string
-          report_count?: number
         }
         Relationships: []
       }
     }
     Views: {
-      report_summary: {
+      record_summary: {
         Row: {
           comment: string | null
+          complaint_count: number | null
           created_at: string | null
           ended_count: number | null
           expires_at: string | null
@@ -125,11 +126,11 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           password: string | null
-          report_count: number | null
           still_valid_count: number | null
         }
         Insert: {
           comment?: string | null
+          complaint_count?: number | null
           created_at?: string | null
           ended_count?: never
           expires_at?: string | null
@@ -139,11 +140,11 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           password?: string | null
-          report_count?: number | null
           still_valid_count?: never
         }
         Update: {
           comment?: string | null
+          complaint_count?: number | null
           created_at?: string | null
           ended_count?: never
           expires_at?: string | null
@@ -153,15 +154,14 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           password?: string | null
-          report_count?: number | null
           still_valid_count?: never
         }
         Relationships: []
       }
     }
     Functions: {
-      increment_report_count: {
-        Args: { report_id: string }
+      increment_record_complaint_count: {
+        Args: { record_id: string }
         Returns: undefined
       }
     }

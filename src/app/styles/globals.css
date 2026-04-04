@@ -131,14 +131,14 @@
 
 /* globals.css */
 
-.report-marker {
+.record-marker {
   position: relative;
   transform: translate(-50%, -120%);
   cursor: pointer;
   transition: transform 0.16s ease;
 }
 
-.report-marker:hover {
+.record-marker:hover {
   transform: translate(-50%, -124%);
 }
 
