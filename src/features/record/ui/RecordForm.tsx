@@ -12,7 +12,7 @@ import { cn } from '@/src/shared/lib/utils';
 
 // 스키마에서 password를 optional로 변경하여 수정 모드(비밀번호 필드 없음)에서도 통과되게 함
 export const recordSchema = z.object({
-  comment: z.string().min(1, '한 줄 코멘트를 입력해주세요').max(50, '50자 이내로 작성해주세요'),
+  comment: z.string().min(1, '내용을 입력해주세요').max(100, '100자 이내로 작성해주세요'),
   password: z.string().optional(),
 });
 
@@ -71,7 +71,7 @@ export const RecordForm = ({
     if (!hidePassword) {
       localStorage.setItem(PASSWORD_STORAGE_KEY, data.password || '');
     }
-    
+
     await onSubmit(data);
   };
 
@@ -79,22 +79,21 @@ export const RecordForm = ({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 py-2">
       {/* 코멘트 */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="comment" className="text-[13px] font-bold text-slate-700">
-            한 줄 코멘트
-          </Label>
-          <span className={cn(
-            "text-[10px] font-medium",
-            commentValue.length >= 50 ? "text-red-500" : "text-slate-400"
-          )}>
-            {commentValue.length} / 50
+        <div className="flex items-center justify-end">
+          <span
+            className={cn(
+              'text-[10px] font-medium',
+              commentValue.length >= 100 ? 'text-red-500' : 'text-slate-400',
+            )}
+          >
+            {commentValue.length} / 100
           </span>
         </div>
         <Textarea
           id="comment"
-          placeholder="지금 이곳의 생생한 상황을 한 줄로 알려주세요"
+          placeholder="내용"
           {...register('comment')}
-          maxLength={50}
+          maxLength={100}
           className="h-20 resize-none border-slate-100 bg-slate-50/50 focus:bg-white"
         />
         {errors.comment && (
@@ -106,7 +105,7 @@ export const RecordForm = ({
       {!hidePassword && (
         <div className="space-y-2">
           <Label htmlFor="password" className="text-[13px] font-bold text-slate-700">
-            관리용 비밀번호
+            비밀번호
           </Label>
           <Input
             id="password"

@@ -73,7 +73,7 @@ export default function HomePage() {
 
         {/* 하단 안내 레이어 */}
         {!selectedLocation && (
-          <div className="pointer-events-none absolute bottom-48 left-1/2 z-10 flex -translate-x-1/2 animate-bounce items-center gap-1.5 rounded-full bg-slate-900/70 px-3 py-1.5 text-[10px] font-bold whitespace-nowrap text-white shadow-lg backdrop-blur-sm md:bottom-6 md:px-4 md:py-2 md:text-[11px]">
+          <div className="pointer-events-none absolute bottom-0 left-1/2 z-10 flex -translate-x-1/2 animate-bounce items-center gap-1.5 rounded-full bg-slate-900/70 px-3 py-1.5 text-[10px] font-bold whitespace-nowrap text-white shadow-lg backdrop-blur-sm md:bottom-6 md:px-4 md:py-2 md:text-[11px]">
             <span>지도를 클릭해 기록해보세요</span>
           </div>
         )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Locate } from 'lucide-react';
 import { NaverMapProps } from '../model/types';
 import { useNaverMap } from '../model/useNaverMap';
@@ -8,6 +8,7 @@ import { useMarkers } from '../model/useMarkers';
 import { useMapStore } from '@/src/shared/model/useMapStore';
 import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
 import { useMobile } from '@/src/shared/lib/hooks/useMobile';
+import { cn } from '@/src/shared/lib/utils';
 
 /**
  * NaverMap 위젯
@@ -89,11 +90,19 @@ export const NaverMap = ({
     }
   }, [selectedLocation, map, updateClickMarker]);
 
+  const [isLocating, setIsLocating] = useState(false);
+
   // 6. 현재 위치로 이동 및 마커 업데이트 핸들러
   const handleMoveToCurrentLocation = () => {
+    setIsLocating(true);
     moveToCurrentLocation((latlng) => {
       updateMyLocationMarker(latlng);
     });
+    
+    // 1초 후 회색으로 복구
+    setTimeout(() => {
+      setIsLocating(false);
+    }, 1000);
   };
 
   return (
@@ -104,10 +113,16 @@ export const NaverMap = ({
       {/* 현재 위치 이동 버튼 */}
       <button
         onClick={handleMoveToCurrentLocation}
-        className="absolute right-6 bottom-6 z-10 flex size-10 items-center justify-center rounded-sm bg-white text-blue-600 shadow-xl ring-1 ring-black/5 transition-all hover:bg-slate-50 active:scale-90"
+        className="absolute right-6 bottom-6 z-30 flex size-10 items-center justify-center rounded-sm bg-white shadow-xl ring-1 ring-black/5 transition-all hover:bg-slate-50 active:scale-90"
         title="내 위치로 이동"
       >
-        <Locate className="size-6" strokeWidth={1} />
+        <Locate 
+          className={cn(
+            "size-6 transition-colors duration-300", 
+            isLocating ? "text-blue-600" : "text-slate-400"
+          )} 
+          strokeWidth={1.5} 
+        />
       </button>
     </div>
   );

@@ -70,9 +70,9 @@ export const RecordItem = ({ record, onClick, variant = 'list', className }: Rec
 
       <p
         className={cn(
-          'mt-2 tracking-[-0.02em] break-words text-slate-900',
+          'mt-2 tracking-[-0.02em] text-slate-900',
           isCard
-            ? 'line-clamp-3 text-[15px] leading-6 font-semibold'
+            ? 'line-clamp-2 text-[15px] leading-6 font-semibold'
             : 'line-clamp-2 text-[14px] leading-6 font-medium',
         )}
       >

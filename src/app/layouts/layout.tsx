@@ -28,14 +28,14 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <head>
+      </head>
+      <body className="flex min-h-full flex-col">
         {naverMapClientId && (
           <Script
             src={`https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${naverMapClientId}&submodules=geocoder`}
             strategy="beforeInteractive"
           />
         )}
-      </head>
-      <body className="flex min-h-full flex-col">
         <main className="flex-1">{children}</main>
       </body>
     </html>

@@ -48,6 +48,7 @@ export const MARKER_TEMPLATES = {
     <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: rgba(59, 130, 246, 0.2); border: 2px solid #3b82f6; border-radius: 50%; animation: clickPulse 1.5s infinite;">
       <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
     </div>
+    <style>@keyframes clickPulse { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }</style>
   `,
 
   // 클러스터 마커
@@ -80,7 +81,9 @@ export const MARKER_TEMPLATES = {
         background-clip: padding-box, border-box;
       ">
         ${displayComment}
-        ${isNew ? `
+        ${
+          isNew
+            ? `
           <div style="
             position: absolute; 
             top: -6px; 
@@ -99,7 +102,9 @@ export const MARKER_TEMPLATES = {
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             z-index: 1;
           ">N</div>
-        ` : ''}
+        `
+            : ''
+        }
         <!-- 꼬리 부분 -->
         <div style="
           position: absolute;
