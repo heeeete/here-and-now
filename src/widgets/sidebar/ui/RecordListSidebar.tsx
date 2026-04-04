@@ -1,28 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, ArrowLeft, MapPin } from 'lucide-react';
+import { Search, ArrowLeft } from 'lucide-react';
 import { Input } from '@/src/shared/ui/input';
 import { Button } from '@/src/shared/ui/button';
 import { cn } from '@/src/shared/lib/utils';
 import { useMapStore } from '@/src/shared/model/useMapStore';
 import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
+import { RecordItem } from '@/src/entities/record/ui/RecordItem';
+import { PlaceItem, Place } from '@/src/entities/record/ui/PlaceItem';
 
 interface RecordListSidebarProps {
   className?: string;
 }
 
-interface Place {
-  title: string;
-  address: string;
-  roadAddress: string;
-  mapx: string;
-  mapy: string;
-  category: string;
-}
-
 /**
- * 지도에 표시된 기록 목록과 장소 검색 기능을 제공하는 사이드바 위젯입니다.
+ * 지도에 표시된 기록 목록과 장소 검색 기능을 제공하는 사이드바 위젯입니다. (PC용)
  */
 export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,7 +23,6 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMoreLoading, setIsMoreLoading] = useState(false);
-  const [totalResults, setTotalResults] = useState(0);
   const [startIndex, setStartIndex] = useState(1);
 
   // 스토어 구독
@@ -60,7 +52,6 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
 
       const data = await response.json();
       setSearchResults(data.items || []);
-      setTotalResults(Number(data.total) || 0);
     } catch (error) {
       console.error('Search failed:', error);
       alert('검색 중 오류가 발생했습니다.');
@@ -74,7 +65,6 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
     if (isMoreLoading) return;
 
     const nextStart = startIndex + 5;
-    // 네이버 API 최대치 1000만 체크
     if (nextStart > 1000) {
       alert('더 이상 검색 결과를 가져올 수 없습니다. (최대 1,000개)');
       return;
@@ -113,7 +103,6 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
     setIsSearchMode(false);
     setSearchTerm('');
     setSearchResults([]);
-    setTotalResults(0);
     setStartIndex(1);
   };
 
@@ -135,7 +124,7 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
         className,
       )}
     >
-      {/* 헤더 영역: 검색창 */}
+      {/* 헤더 영역 */}
       <div className="flex flex-col gap-4 border-b p-6 pt-10">
         <div className="flex h-8 items-center gap-2">
           {isSearchMode && (
@@ -165,10 +154,9 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
       </div>
 
       {/* 목록 영역 */}
-      <div className="flex-1 overflow-x-hidden overflow-y-auto p-4">
+      <div className="flex-1 overflow-x-hidden overflow-y-auto">
         {isSearchMode ? (
-          /* 장소 검색 결과 목록 */
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 p-4">
             {isLoading ? (
               <div className="py-20 text-center text-slate-400">검색 중...</div>
             ) : (
@@ -176,30 +164,13 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
                 {searchResults.length > 0 ? (
                   <>
                     {searchResults.map((place, idx) => (
-                      <button
+                      <PlaceItem
                         key={`${place.mapx}-${place.mapy}-${idx}`}
-                        onClick={() => handlePlaceClick(place)}
-                        className="group flex w-full flex-col gap-1 rounded-xl border bg-white p-4 text-left shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50/30 active:scale-[0.98]"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-600">
-                            <MapPin className="size-4" />
-                          </div>
-                          <div>
-                            <h3
-                              className="font-bold text-slate-800"
-                              dangerouslySetInnerHTML={{ __html: place.title }}
-                            />
-                            <p className="text-xs text-slate-500">
-                              {place.roadAddress || place.address}
-                            </p>
-                            <p className="mt-1 text-[10px] text-slate-400">{place.category}</p>
-                          </div>
-                        </div>
-                      </button>
+                        place={place}
+                        onClick={handlePlaceClick}
+                      />
                     ))}
 
-                    {/* 더 보기 버튼 - 결과가 5개 이상이면 무조건 노출 (가장 확실한 방법) */}
                     {searchResults.length >= 5 && searchResults.length < 1000 && (
                       <div className="flex w-full justify-center pt-6 pb-12">
                         <Button
@@ -220,52 +191,20 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
             )}
           </div>
         ) : (
-          /* 실시간 기록 목록 */
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col">
             {records.length === 0 ? (
               <div className="flex h-40 flex-col items-center justify-center text-center text-slate-400">
                 <p className="text-sm">현재 영역에 기록이 없거나</p>
                 <p className="text-sm">검색 결과가 없습니다.</p>
               </div>
             ) : (
-              records.map((record) => {
-                const date = new Date(record.created_at);
-                const timeString = new Intl.DateTimeFormat('ko-KR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                }).format(date);
-
-                return (
-                  <button
-                    key={record.id}
-                    onClick={() => setSelectedRecordId(record.id)}
-                    className="group flex w-full flex-col gap-2 rounded-xl border bg-white p-4 text-left shadow-sm transition-all hover:border-blue-200 hover:bg-blue-50/30 hover:shadow-md active:scale-[0.98]"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-700">실시간 기록</span>
-                      </div>
-                      <span className="text-[11px] font-medium text-slate-400">{timeString}</span>
-                    </div>
-                    <p className="line-clamp-2 text-sm leading-relaxed text-slate-600">
-                      {record.comment}
-                    </p>
-
-                    <div className="mt-1 flex items-center gap-3">
-                      {record.helpful_count > 0 && (
-                        <span className="text-[11px] text-blue-500">
-                          도움됐어요 {record.helpful_count}
-                        </span>
-                      )}
-                      {record.still_valid_count > 0 && (
-                        <span className="text-[11px] text-green-500">
-                          유효함 {record.still_valid_count}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })
+              records.map((record) => (
+                <RecordItem
+                  key={record.id}
+                  record={record}
+                  onClick={setSelectedRecordId}
+                />
+              ))
             )}
           </div>
         )}

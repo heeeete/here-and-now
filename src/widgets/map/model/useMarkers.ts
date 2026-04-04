@@ -145,15 +145,18 @@ export const useMarkers = (map: naver.maps.Map | null, onMarkerClick?: (id: stri
         } else {
           // 개별 기록 마커 (말풍선)
           const record = cluster.members[0];
+
+          // 2시간 이내면 NEW 뱃지 표시
+          const isNew = new Date().getTime() - new Date(record.created_at).getTime() < 2 * 60 * 60 * 1000;
+
           marker = new naver.maps.Marker({
             position,
             map,
             icon: {
-              content: MARKER_TEMPLATES.recordBubble(record.comment),
+              content: MARKER_TEMPLATES.recordBubble(record.comment, isNew),
               anchor: new naver.maps.Point(0, 0),
             },
           });
-
           naver.maps.Event.addListener(marker, 'click', () => {
             onMarkerClick?.(record.id);
           });
