@@ -158,6 +158,7 @@ export const useMarkers = (map: naver.maps.Map | null, onMarkerClick?: (id: stri
             },
           });
           naver.maps.Event.addListener(marker, 'click', () => {
+            map.panTo(position); // 마커 위치로 부드럽게 이동 추가
             onMarkerClick?.(record.id);
           });
         }

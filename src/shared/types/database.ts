@@ -80,37 +80,49 @@ export type Database = {
       }
       records: {
         Row: {
+          amazing_count: number | null
           comment: string
           complaint_count: number
           created_at: string
           expires_at: string
+          funny_count: number | null
           id: string
           image_url: string | null
           latitude: number
+          like_count: number | null
           longitude: number
           password: string
+          sad_count: number | null
         }
         Insert: {
+          amazing_count?: number | null
           comment: string
           complaint_count?: number
           created_at?: string
           expires_at?: string
+          funny_count?: number | null
           id?: string
           image_url?: string | null
           latitude: number
+          like_count?: number | null
           longitude: number
           password: string
+          sad_count?: number | null
         }
         Update: {
+          amazing_count?: number | null
           comment?: string
           complaint_count?: number
           created_at?: string
           expires_at?: string
+          funny_count?: number | null
           id?: string
           image_url?: string | null
           latitude?: number
+          like_count?: number | null
           longitude?: number
           password?: string
+          sad_count?: number | null
         }
         Relationships: []
       }
@@ -133,34 +145,34 @@ export type Database = {
           sad_count: number | null
         }
         Insert: {
-          amazing_count?: never
+          amazing_count?: number | null
           comment?: string | null
           complaint_count?: number | null
           created_at?: string | null
           expires_at?: string | null
-          funny_count?: never
+          funny_count?: number | null
           id?: string | null
           image_url?: string | null
           latitude?: number | null
-          like_count?: never
+          like_count?: number | null
           longitude?: number | null
           password?: string | null
-          sad_count?: never
+          sad_count?: number | null
         }
         Update: {
-          amazing_count?: never
+          amazing_count?: number | null
           comment?: string | null
           complaint_count?: number | null
           created_at?: string | null
           expires_at?: string | null
-          funny_count?: never
+          funny_count?: number | null
           id?: string | null
           image_url?: string | null
           latitude?: number | null
-          like_count?: never
+          like_count?: number | null
           longitude?: number | null
           password?: string | null
-          sad_count?: never
+          sad_count?: number | null
         }
         Relationships: []
       }
