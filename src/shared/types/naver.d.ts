@@ -11,6 +11,11 @@ declare global {
         getZoom(): number;
         setZoom(zoom: number, effect?: boolean): void;
         getBounds(): LatLngBounds;
+        getProjection(): MapSystemProjection;
+      }
+
+      class MapSystemProjection {
+        fromCoordToOffset(latlng: LatLng): Point;
       }
 
       interface MapOptions {
@@ -66,6 +71,7 @@ declare global {
 
       namespace Event {
         function addListener(target: any, eventName: string, listener: (event: any) => void): MapEventListener;
+        function removeListener(listener: MapEventListener): void;
       }
 
       class Size {
@@ -74,6 +80,8 @@ declare global {
 
       class Point {
         constructor(x: number, y: number);
+        x: number;
+        y: number;
       }
     }
   }
