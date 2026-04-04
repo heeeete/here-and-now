@@ -1,17 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ReactionType, postReaction } from '@/src/entities/record/api/post-reaction';
 import { deleteReaction } from '@/src/entities/record/api/delete-reaction';
-import { Record } from '@/src/entities/record/model/types';
 
-interface SavedReaction {
+export interface SavedReaction {
   id: string;
   type: ReactionType;
 }
 
-const REACTIONS_STORAGE_KEY = 'nowhere_user_reactions_v3';
+const REACTIONS_STORAGE_KEY = 'nowhere_user_reactions_v4';
 const DEVICE_ID_KEY = 'nowhere_device_id';
 
-// 기기 ID 헬퍼 (내부용)
 const getDeviceId = () => {
   if (typeof window === 'undefined') return '';
   let deviceId = localStorage.getItem(DEVICE_ID_KEY);
@@ -28,91 +26,69 @@ const getDeviceId = () => {
 
 /**
  * 기록에 대한 반응(좋아요 등) 로직을 관리하는 훅
+ * - 낙관적 업데이트(Optimistic Update) 적용으로 빠른 사용자 경험 제공
  */
-export const useReaction = (recordId: string | null, initialRecord: Record | null) => {
-  const [userReaction, setUserReaction] = useState<SavedReaction | null>(null);
-  const [record, setRecord] = useState<Record | null>(initialRecord);
+export const useReaction = (
+  recordId: string | null, 
+  onUpdate: () => Promise<void>
+) => {
+  const [userReactions, setUserReactions] = useState<SavedReaction[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // 초기 레코드 동기화
-  useEffect(() => {
-    setRecord(initialRecord);
-  }, [initialRecord]);
-
-  // 로컬 스토리지에서 내 반응 정보 로드
-  useEffect(() => {
+// 1. 초기 상태 로드
+useEffect(() => {
+  const loadReactions = () => {
     if (!recordId) {
-      setUserReaction(null);
+      setUserReactions([]);
       return;
     }
-    const reactions = JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || '{}');
-    setUserReaction(reactions[recordId] || null);
-  }, [recordId]);
+    const all = JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || '{}');
+    setUserReactions(Array.isArray(all[recordId]) ? all[recordId] : []);
+  };
+  loadReactions();
+}, [recordId]);
 
-  const handleReaction = useCallback(async (type: ReactionType) => {
-    if (!recordId || !record || isProcessing) return;
+// 2. 반응 처리 (낙관적 업데이트 로직)
+const handleReaction = useCallback(async (type: ReactionType) => {
+  if (!recordId || isProcessing) return;
 
-    const reactions = JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || '{}');
-    const existing = reactions[recordId] as SavedReaction | undefined;
-    const deviceId = getDeviceId();
+  const deviceId = getDeviceId();
+  const existing = userReactions.find(r => r.type === type);
+  const isActive = !!existing;
 
-    setIsProcessing(true);
-    try {
-      // 1. 토글 취소
-      if (existing && existing.type === type) {
-        await deleteReaction({ recordId, deviceId });
-        delete reactions[recordId];
-        localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
-        setUserReaction(null);
-        
-        setRecord(prev => {
-          if (!prev) return null;
-          const countKey = `${type}_count` as keyof Record;
-          return { ...prev, [countKey]: Math.max(0, (prev[countKey] as number) - 1) };
-        });
-        return;
-      }
+  // 2-1. UI 즉시 업데이트
+  const prevReactions = [...userReactions];
+  const newReactions = isActive
+    ? userReactions.filter(r => r.type !== type)
+    : [...userReactions, { id: 'temp-' + Date.now(), type }];
 
-      // 2. 수정 또는 신규
-      await deleteReaction({ recordId, deviceId });
-      const newReaction = await postReaction(recordId, type, deviceId);
-      
-      if (!newReaction) throw new Error('반응 등록 실패');
+  setUserReactions(newReactions);
+  setIsProcessing(true); // 로딩 시작
 
-      const savedData: SavedReaction = { id: newReaction.id, type };
-      reactions[recordId] = savedData;
-      localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
-      setUserReaction(savedData);
-
-      // 낙관적 업데이트
-      setRecord(prev => {
-        if (!prev) return null;
-        
-        const updates: Partial<Record> = {};
-        if (existing) {
-          const oldKey = `${existing.type}_count` as keyof Record;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (updates as any)[oldKey] = Math.max(0, (prev[oldKey] as number) - 1);
-        }
-        const newKey = `${type}_count` as keyof Record;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (updates as any)[newKey] = ((prev[newKey] as number) || 0) + 1;
-        
-        return { ...prev, ...updates };
-      });
-
-    } catch (err) {
-      console.error('Reaction error:', err);
-      throw err;
-    } finally {
-      setIsProcessing(false);
+  try {
+    if (isActive) {
+      await deleteReaction({ recordId, deviceId, type });
+    } else {
+      await postReaction(recordId, type, deviceId);
     }
-  }, [recordId, record, isProcessing]);
 
+    // 2-2. 서버 성공 시 로컬 스토리지 최종 동기화
+    const all = JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || '{}');
+    all[recordId] = newReactions;
+    localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(all));
+
+    // 2-3. 서버 집계 데이터 백그라운드 갱신
+    void onUpdate();
+  } catch (err) {
+    // 2-4. 실패 시 롤백
+    console.error('Reaction failed:', err);
+    setUserReactions(prevReactions);
+    alert('반응 처리에 실패했습니다. 다시 시도해주세요.');
+  } finally {
+    setIsProcessing(false); // 로딩 종료
+  }
+}, [recordId, userReactions, isProcessing, onUpdate]);
   return {
-    record,
-    setRecord,
-    userReaction,
+    userReactions,
     isProcessing,
     handleReaction
   };

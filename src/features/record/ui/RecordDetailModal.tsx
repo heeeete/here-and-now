@@ -30,27 +30,28 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
   const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
   const refreshRecords = useRecordStore((state) => state.refreshRecords);
 
-  const [initialRecord, setInitialRecord] = useState<Record | null>(null);
+  const [detailData, setDetailData] = useState<Record | null>(null);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'edit' | 'delete' | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [verifiedPassword, setVerifiedPassword] = useState('');
 
-  // 반응 처리 훅 사용
-  const { record, userReaction, isProcessing, handleReaction } = useReaction(
-    selectedRecordId,
-    initialRecord,
-  );
-
-  // 상세 데이터 초기 패칭
+  // 상세 데이터 패칭 핸들러 (훅에 콜백으로 전달)
   const fetchDetail = useCallback(async () => {
     if (selectedRecordId) {
       const data = await fetchRecordById(selectedRecordId);
-      setInitialRecord(data);
+      setDetailData(data);
     }
   }, [selectedRecordId]);
 
+  // 반응 처리 훅 사용
+  const { userReactions, isProcessing, handleReaction } = useReaction(
+    selectedRecordId,
+    fetchDetail
+  );
+
+  // 모달이 열리거나 ID가 바뀔 때 데이터 로드
   useEffect(() => {
     if (selectedRecordId && !isEditModalOpen) {
       void fetchDetail();
@@ -105,19 +106,19 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
             <div className="p-5 pb-0">
               <DialogHeader className="gap-1.5">
                 <DialogTitle className="mt-1 text-base leading-snug font-bold wrap-break-word">
-                  {record?.comment}
+                  {detailData?.comment}
                 </DialogTitle>
                 <p className="text-[10px] text-slate-400">
-                  {record?.created_at && new Date(record.created_at).toLocaleTimeString()} 기록
+                  {detailData?.created_at && new Date(detailData.created_at).toLocaleTimeString()} 기록
                 </p>
               </DialogHeader>
             </div>
 
             <div className="grid grid-cols-4 gap-1.5 p-5 pt-4">
               {REACTION_LIST.map((item) => {
-                const isActive = userReaction?.type === item.type;
+                const isActive = userReactions.some((r) => r.type === item.type);
                 const countKey = `${item.type}_count` as keyof Record;
-                const count = record ? (record[countKey] as number) || 0 : 0;
+                const count = detailData ? (detailData[countKey] as number) || 0 : 0;
 
                 return (
                   <Button
@@ -162,7 +163,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
       />
 
       <EditRecordModal
-        record={record}
+        record={detailData}
         isOpen={isEditModalOpen}
         password={verifiedPassword}
         onOpenChange={setIsEditModalOpen}
