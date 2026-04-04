@@ -2,35 +2,42 @@
 
 import { useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/src/shared/ui/dialog';
-import { Button } from '@/src/shared/ui/button';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/src/shared/ui/alert-dialog';
 import { Input } from '@/src/shared/ui/input';
-import { Label } from '@/src/shared/ui/label';
+import { cn } from '@/src/shared/lib/utils';
 
 interface AuthPasswordModalProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: (password: string) => void;
   title: string;
-  description?: string;
+  description: string;
+  isDelete?: boolean;
 }
 
+/**
+ * 수정/삭제 전 비밀번호를 확인하는 모달입니다.
+ */
 export const AuthPasswordModal = ({
   isOpen,
   onOpenChange,
   onConfirm,
   title,
   description,
+  isDelete = false,
 }: AuthPasswordModalProps) => {
   const [password, setPassword] = useState('');
 
   const handleConfirm = () => {
-    if (!password) {
+    if (!password.trim()) {
       alert('비밀번호를 입력해주세요.');
       return;
     }
@@ -39,34 +46,49 @@ export const AuthPasswordModal = ({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="password">비밀번호</Label>
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="fixed top-auto right-4 bottom-4 left-auto w-[320px] translate-x-0 translate-y-0 sm:max-w-[320px]">
+        <AlertDialogHeader>
+          <AlertDialogTitle className={cn(isDelete ? "text-red-600" : "text-slate-900")}>
+            {title}
+          </AlertDialogTitle>
+          <AlertDialogDescription className="sr-only">
+            {description}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <p className="text-[13px] font-medium text-slate-500">{description}</p>
             <Input
-              id="password"
               type="password"
-              placeholder="작성 시 입력한 비밀번호"
+              placeholder="비밀번호 4자리 이상"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
+              autoFocus
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+
+        <AlertDialogFooter className="flex-row gap-2 sm:justify-end">
+          <AlertDialogCancel variant="outline" className="flex-1">
             취소
-          </Button>
-          <Button onClick={handleConfirm}>확인</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </AlertDialogCancel>
+          <AlertDialogAction 
+            className={cn(
+              "flex-1 font-bold text-white",
+              isDelete ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              handleConfirm();
+            }}
+          >
+            {isDelete ? "삭제하기" : "확인"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };

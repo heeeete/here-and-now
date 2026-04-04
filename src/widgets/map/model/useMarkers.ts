@@ -153,7 +153,7 @@ export const useMarkers = (map: naver.maps.Map | null, onMarkerClick?: (id: stri
             position,
             map,
             icon: {
-              content: MARKER_TEMPLATES.recordBubble(record.comment, isNew),
+              content: MARKER_TEMPLATES.recordBubble(record.comment, record.id, isNew),
               anchor: new naver.maps.Point(0, 0),
             },
           });

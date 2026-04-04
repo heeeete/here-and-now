@@ -39,12 +39,10 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
   const [verifiedPassword, setVerifiedPassword] = useState('');
 
   // 반응 처리 훅 사용
-  const { 
-    record, 
-    userReaction, 
-    isProcessing, 
-    handleReaction 
-  } = useReaction(selectedRecordId, initialRecord);
+  const { record, userReaction, isProcessing, handleReaction } = useReaction(
+    selectedRecordId,
+    initialRecord,
+  );
 
   // 상세 데이터 초기 패칭
   useEffect(() => {
@@ -56,29 +54,6 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
       void fetchDetail();
     }
   }, [selectedRecordId, isEditModalOpen]);
-
-  // 남은 시간 계산
-  useEffect(() => {
-    if (!record?.expires_at) return;
-
-    const calculateTime = () => {
-      const now = new Date().getTime();
-      const expires = new Date(record.expires_at).getTime();
-      const diff = expires - now;
-
-      if (diff <= 0) {
-        setTimeLeft('만료됨');
-      } else {
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        setTimeLeft(`${hours}시간 ${mins}분 남음`);
-      }
-    };
-
-    calculateTime();
-    const timer = setInterval(calculateTime, 60000); // 1분마다 갱신
-    return () => clearInterval(timer);
-  }, [record?.expires_at]);
 
   const handleReportComplaint = async () => {
     if (!selectedRecordId) return;
@@ -106,7 +81,8 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
         void refreshRecords();
         onRefresh?.();
       } else if (authMode === 'edit') {
-        const { postVerifyPassword } = await import('@/src/entities/record/api/post-verify-password');
+        const { postVerifyPassword } =
+          await import('@/src/entities/record/api/post-verify-password');
         await postVerifyPassword(selectedRecordId, password);
         setVerifiedPassword(password);
         setIsAuthModalOpen(false);
@@ -124,13 +100,10 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
     <>
       <Dialog open={!!selectedRecordId} onOpenChange={(open) => !open && setSelectedRecordId(null)}>
         <DialogContent className="fixed top-auto right-4 bottom-4 left-auto w-[320px] translate-x-0 translate-y-0 overflow-hidden p-0 sm:max-w-[320px]">
-          <div className="flex flex-col pt-5">
+          <div className="flex flex-col">
             <div className="p-5 pb-0">
               <DialogHeader className="gap-1.5">
-                <div className="flex items-center justify-end">
-                  <span className="text-[11px] font-semibold text-red-500">{timeLeft}</span>
-                </div>
-                <DialogTitle className="mt-1 text-base leading-snug font-bold break-keep">
+                <DialogTitle className="mt-1 text-base leading-snug font-bold wrap-break-word">
                   {record?.comment}
                 </DialogTitle>
                 <p className="text-[10px] text-slate-400">
@@ -151,7 +124,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
                     variant={isActive ? 'default' : 'outline'}
                     disabled={isProcessing}
                     className={cn(
-                      'flex h-14 flex-col items-center justify-center gap-1 border-slate-100 bg-slate-50/50 transition-all px-0',
+                      'flex h-14 flex-col items-center justify-center gap-1 border-slate-100 bg-slate-50/50 px-0 transition-all',
                       isActive
                         ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-600'
                         : 'hover:border-blue-100 hover:bg-blue-50',
@@ -159,7 +132,12 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
                     onClick={() => handleReaction(item.type)}
                   >
                     <span className="text-lg leading-none">{item.emoji}</span>
-                    <span className={cn('text-[10px] font-bold leading-none', isActive ? 'text-white' : 'text-slate-500')}>
+                    <span
+                      className={cn(
+                        'text-[10px] leading-none font-bold',
+                        isActive ? 'text-white' : 'text-slate-500',
+                      )}
+                    >
                       {count}
                     </span>
                   </Button>
@@ -168,11 +146,35 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
             </div>
 
             <div className="flex flex-row items-stretch gap-0 border-t border-slate-100 bg-slate-50/30 p-0 sm:justify-start">
-              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-500" onClick={handleReportComplaint}>신고</Button>
+              <Button
+                variant="ghost"
+                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-500"
+                onClick={handleReportComplaint}
+              >
+                신고
+              </Button>
               <div className="w-px bg-slate-100" />
-              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-slate-900" onClick={() => { setAuthMode('edit'); setIsAuthModalOpen(true); }}>수정</Button>
+              <Button
+                variant="ghost"
+                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-slate-900"
+                onClick={() => {
+                  setAuthMode('edit');
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                수정
+              </Button>
               <div className="w-px bg-slate-100" />
-              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-600" onClick={() => { setAuthMode('delete'); setIsAuthModalOpen(true); }}>삭제</Button>
+              <Button
+                variant="ghost"
+                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                onClick={() => {
+                  setAuthMode('delete');
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                삭제
+              </Button>
             </div>
           </div>
         </DialogContent>
@@ -184,6 +186,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
         onConfirm={handleAuthConfirm}
         title={authMode === 'edit' ? '기록 수정' : '기록 삭제'}
         description="비밀번호를 입력해주세요."
+        isDelete={authMode === 'delete'}
       />
 
       <EditRecordModal
