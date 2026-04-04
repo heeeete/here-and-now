@@ -179,7 +179,7 @@ export type Database = {
     }
     Functions: {
       delete_device_reaction: {
-        Args: { p_device_id: string; p_record_id: string }
+        Args: { p_device_id: string; p_record_id: string; p_type: string }
         Returns: undefined
       }
       increment_record_complaint_count: {

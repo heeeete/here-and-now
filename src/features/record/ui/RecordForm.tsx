@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/src/shared/ui/button';
@@ -12,7 +12,7 @@ import { cn } from '@/src/shared/lib/utils';
 
 // 스키마에서 password를 optional로 변경하여 수정 모드(비밀번호 필드 없음)에서도 통과되게 함
 export const recordSchema = z.object({
-  comment: z.string().min(1, '내용을 입력해주세요').max(100, '100자 이내로 작성해주세요'),
+  comment: z.string().min(1, '한 줄 코멘트를 입력해주세요').max(100, '100자 이내로 작성해주세요'),
   password: z.string().optional(),
 });
 
@@ -39,7 +39,7 @@ export const RecordForm = ({
     register,
     handleSubmit,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<RecordFormValues>({
     resolver: zodResolver(recordSchema),
@@ -49,7 +49,11 @@ export const RecordForm = ({
     },
   });
 
-  const commentValue = watch('comment');
+  const commentValue = useWatch({
+    control,
+    name: 'comment',
+    defaultValue: defaultValues?.comment || '',
+  });
 
   // 로컬 스토리지에서 마지막 비밀번호 불러오기 (작성 모드일 때만)
   useEffect(() => {
@@ -71,7 +75,7 @@ export const RecordForm = ({
     if (!hidePassword) {
       localStorage.setItem(PASSWORD_STORAGE_KEY, data.password || '');
     }
-
+    
     await onSubmit(data);
   };
 
@@ -80,13 +84,11 @@ export const RecordForm = ({
       {/* 코멘트 */}
       <div className="space-y-2">
         <div className="flex items-center justify-end">
-          <span
-            className={cn(
-              'text-[10px] font-medium',
-              commentValue.length >= 100 ? 'text-red-500' : 'text-slate-400',
-            )}
-          >
-            {commentValue.length} / 100
+          <span className={cn(
+            "text-[10px] font-medium",
+            (commentValue || '').length >= 100 ? "text-red-500" : "text-slate-400"
+          )}>
+            {(commentValue || '').length} / 100
           </span>
         </div>
         <Textarea
