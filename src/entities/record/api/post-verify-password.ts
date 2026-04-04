@@ -1,13 +1,13 @@
 import { createClient } from '@/src/shared/lib/supabase/client';
 
 /**
- * 제보의 비밀번호가 일치하는지 확인합니다.
+ * 기록의 비밀번호가 일치하는지 확인합니다.
  */
 export async function postVerifyPassword(id: string, password: string) {
   const supabase = createClient();
 
   const { data, error } = await supabase
-    .from('reports')
+    .from('records')
     .select('id')
     .match({ id, password })
     .maybeSingle();

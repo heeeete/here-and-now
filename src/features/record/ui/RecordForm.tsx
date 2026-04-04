@@ -9,17 +9,16 @@ import { Input } from '@/src/shared/ui/input';
 import { Label } from '@/src/shared/ui/label';
 import { Textarea } from '@/src/shared/ui/textarea';
 
-
-export const reportSchema = z.object({
+export const recordSchema = z.object({
   comment: z.string().min(1, '한 줄 코멘트를 입력해주세요').max(50, '50자 이내로 작성해주세요'),
   password: z.string().min(4, '비밀번호는 4자리 이상이어야 합니다'),
 });
 
-export type ReportFormValues = z.infer<typeof reportSchema>;
+export type RecordFormValues = z.infer<typeof recordSchema>;
 
-interface ReportFormProps {
-  defaultValues?: Partial<ReportFormValues>;
-  onSubmit: (values: ReportFormValues) => Promise<void>;
+interface RecordFormProps {
+  defaultValues?: Partial<RecordFormValues>;
+  onSubmit: (values: RecordFormValues) => Promise<void>;
   submitLabel: string;
   isSubmitting: boolean;
   hidePassword?: boolean;
@@ -27,20 +26,20 @@ interface ReportFormProps {
 
 const PASSWORD_STORAGE_KEY = 'nowhere_last_password';
 
-export const ReportForm = ({
+export const RecordForm = ({
   defaultValues,
   onSubmit,
   submitLabel,
   isSubmitting,
   hidePassword = false,
-}: ReportFormProps) => {
+}: RecordFormProps) => {
   const {
     register,
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<ReportFormValues>({
-    resolver: zodResolver(reportSchema),
+  } = useForm<RecordFormValues>({
+    resolver: zodResolver(recordSchema),
     defaultValues: {
       comment: defaultValues?.comment || '',
       password: defaultValues?.password || '',
@@ -57,7 +56,7 @@ export const ReportForm = ({
     }
   }, [hidePassword, defaultValues?.password, setValue]);
 
-  const handleFormSubmit = async (values: ReportFormValues) => {
+  const handleFormSubmit = async (values: RecordFormValues) => {
     if (!hidePassword) {
       localStorage.setItem(PASSWORD_STORAGE_KEY, values.password);
     }
@@ -75,7 +74,7 @@ export const ReportForm = ({
           id="comment"
           placeholder="지금 이곳의 생생한 상황을 한 줄로 알려주세요"
           {...register('comment')}
-          className="h-20 resize-none rounded-xl border-slate-100 bg-slate-50/50 text-[13px] focus:bg-white"
+          className="h-20 resize-none border-slate-100 bg-slate-50/50 focus:bg-white"
         />
         {errors.comment && (
           <p className="text-xs font-medium text-red-500">{errors.comment.message}</p>
@@ -93,7 +92,7 @@ export const ReportForm = ({
             type="password"
             placeholder="수정/삭제 시 필요합니다 (4자리 이상)"
             {...register('password')}
-            className="rounded-xl border-slate-100 bg-slate-50/50 text-[13px] focus:bg-white"
+            className="border-slate-100 bg-slate-50/50 focus:bg-white"
           />
           {errors.password && (
             <p className="text-xs font-medium text-red-500">{errors.password.message}</p>
@@ -106,7 +105,7 @@ export const ReportForm = ({
           type="submit"
           size="lg"
           disabled={isSubmitting}
-          className="w-full rounded-xl bg-blue-600 font-bold text-white shadow-lg hover:bg-blue-700 disabled:bg-slate-200"
+          className="w-full bg-blue-600 font-bold text-white shadow-lg hover:bg-blue-700 disabled:bg-slate-200"
         >
           {isSubmitting ? '처리 중...' : submitLabel}
         </Button>

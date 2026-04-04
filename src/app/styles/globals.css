@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -127,4 +127,57 @@
   html {
     @apply font-sans;
   }
+}
+
+/* globals.css */
+
+.record-marker {
+  position: relative;
+  transform: translate(-50%, -120%);
+  cursor: pointer;
+  transition: transform 0.16s ease;
+}
+
+.record-marker:hover {
+  transform: translate(-50%, -124%);
+}
+
+.speech-bubble {
+  position: relative;
+  display: inline-block;
+  max-width: 180px;
+  padding: 10px 14px;
+  background: #fff;
+
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.14);
+  color: #0f172a;
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5.5px;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-top: 9px solid #fff;
 }

@@ -7,33 +7,33 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/src/shared/ui/dialog';
-import { postReportUpdate } from '@/src/entities/report/api/post-report-update';
-import { Report } from '@/src/entities/report/model/types';
-import { ReportForm, ReportFormValues } from './ReportForm';
+import { postRecordUpdate } from '@/src/entities/record/api/post-record-update';
+import { Record } from '@/src/entities/record/model/types';
+import { RecordForm, RecordFormValues } from './RecordForm';
 
-interface EditReportModalProps {
-  report: Report | null;
-  isOpen: boolean; // 추가
+interface EditRecordModalProps {
+  record: Record | null;
+  isOpen: boolean;
   password?: string;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }
 
-export const EditReportModal = ({
-  report,
-  isOpen, // 추가
+export const EditRecordModal = ({
+  record,
+  isOpen,
   password = '',
   onOpenChange,
   onSuccess,
-}: EditReportModalProps) => {
+}: EditRecordModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onSubmit = async (values: ReportFormValues) => {
-    if (!report?.id) return;
+  const onSubmit = async (values: RecordFormValues) => {
+    if (!record?.id) return;
 
     setIsSubmitting(true);
     try {
-      await postReportUpdate(report.id, password, values);
+      await postRecordUpdate(record.id, password, values);
       onSuccess();
       onOpenChange(false);
     } catch (error: unknown) {
@@ -49,16 +49,16 @@ export const EditReportModal = ({
       <DialogContent className="fixed bottom-4 left-auto right-4 top-auto translate-x-0 translate-y-0 sm:max-w-sm">
         <div className="max-h-[80vh] overflow-y-auto pr-2">
           <DialogHeader>
-            <DialogTitle>제보 수정하기</DialogTitle>
+            <DialogTitle>기록 수정하기</DialogTitle>
             <p className="text-xs text-muted-foreground">
               현재 상황에 맞게 내용을 업데이트해주세요.
             </p>
           </DialogHeader>
 
-          {report && (
-            <ReportForm
+          {record && (
+            <RecordForm
               defaultValues={{
-                comment: report.comment || '',
+                comment: record.comment || '',
                 password: '',
               }}
               onSubmit={onSubmit}

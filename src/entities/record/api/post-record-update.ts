@@ -1,10 +1,10 @@
 import { createClient } from '@/src/shared/lib/supabase/client';
-import { Report } from '../model/types';
+import { Record } from '../model/types';
 
 /**
- * 제보를 수정합니다 (비밀번호 검증 포함).
+ * 기록을 수정합니다 (비밀번호 검증 포함).
  */
-export async function postReportUpdate(id: string, password: string, updates: Partial<Report>) {
+export async function postRecordUpdate(id: string, password: string, updates: Partial<Record>) {
   const supabase = createClient();
 
   // null 값을 허용하지 않는 필드들을 안전하게 처리
@@ -14,7 +14,7 @@ export async function postReportUpdate(id: string, password: string, updates: Pa
   };
 
   const { data, error } = await supabase
-    .from('reports')
+    .from('records')
     .update(cleanUpdates)
     .match({ id, password })
     .select();
