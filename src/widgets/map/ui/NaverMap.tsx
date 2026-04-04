@@ -19,27 +19,27 @@ export const NaverMap = ({
   onBoundsChange,
   className,
 }: Omit<NaverMapProps, 'records' | 'selectedLocation'>) => {
-  // 스토어에서 상태 직접 구독
-  const { center: storeCenter, selectedLocation, setSelectedLocation } = useMapStore();
-  const { records, setSelectedRecordId } = useRecordStore();
+  // 스토어에서 상태 개별 구독 (Selector)
+  const storeCenter = useMapStore((state) => state.center);
+  const setCenter = useMapStore((state) => state.setCenter);
+  const selectedLocation = useMapStore((state) => state.selectedLocation);
+  const setSelectedLocation = useMapStore((state) => state.setSelectedLocation);
+
+  const records = useRecordStore((state) => state.records);
+  const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
 
   // 1. 지도 인스턴스 초기화 및 기본 이벤트 관리
-  const { mapRef, map, moveToCurrentLocation } = useNaverMap(
-    (lat, lng) => {
-      setSelectedLocation({ lat, lng });
-      onMapClick?.(lat, lng);
-    },
-    onBoundsChange
-  );
+  const { mapRef, map, moveToCurrentLocation } = useNaverMap((lat, lng) => {
+    setCenter(lat, lng);
+    setSelectedLocation({ lat, lng });
+    onMapClick?.(lat, lng);
+  }, onBoundsChange);
 
   // 2. 마커 및 클러스터 관리
-  const { renderRecords, updateMyLocationMarker, updateClickMarker } = useMarkers(
-    map,
-    (id) => {
-      setSelectedRecordId(id);
-      onMarkerClick?.(id);
-    }
-  );
+  const { renderRecords, updateMyLocationMarker, updateClickMarker } = useMarkers(map, (id) => {
+    setSelectedRecordId(id);
+    onMarkerClick?.(id);
+  });
 
   // 3. 지도 유휴(Idle) 상태 및 줌 변경 시 마커 재렌더링
   useEffect(() => {
@@ -62,18 +62,14 @@ export const NaverMap = ({
   useEffect(() => {
     if (map && storeCenter) {
       const newCenter = new naver.maps.LatLng(storeCenter.lat, storeCenter.lng);
-      map.setCenter(newCenter);
-      map.setZoom(16, true);
+      map.panTo(newCenter);
     }
   }, [map, storeCenter]);
 
   // 5. 선택된 위치(클릭 지점) 변경 시 마커 업데이트
   useEffect(() => {
     if (map) {
-      updateClickMarker(
-        selectedLocation?.lat ?? 0,
-        selectedLocation ? selectedLocation.lng : null
-      );
+      updateClickMarker(selectedLocation?.lat ?? 0, selectedLocation ? selectedLocation.lng : null);
     }
   }, [selectedLocation, map, updateClickMarker]);
 
@@ -87,11 +83,7 @@ export const NaverMap = ({
   return (
     <div className="relative h-full w-full">
       {/* 지도 컨테이너 */}
-      <div 
-        ref={mapRef} 
-        className={className} 
-        style={{ width: '100%', height: '100%' }} 
-      />
+      <div ref={mapRef} className={className} style={{ width: '100%', height: '100%' }} />
 
       {/* 현재 위치 이동 버튼 */}
       <button

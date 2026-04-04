@@ -6,8 +6,7 @@ import { Input } from '@/src/shared/ui/input';
 import { Button } from '@/src/shared/ui/button';
 import { cn } from '@/src/shared/lib/utils';
 import { useMapStore } from '@/src/shared/model/useMapStore';
-import { useRecordStore } from '@/src/entities/record/model/types'; // types에서 가져오지 않도록 주의
-import { useRecordStore as useRecordDataStore } from '@/src/entities/record/model/useRecordStore';
+import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
 
 interface RecordListSidebarProps {
   className?: string;
@@ -35,8 +34,11 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
   const [startIndex, setStartIndex] = useState(1);
 
   // 스토어 구독
-  const { setCenter, setSelectedLocation } = useMapStore();
-  const { records, setSelectedRecordId } = useRecordDataStore();
+  const setCenter = useMapStore((state) => state.setCenter);
+  const setSelectedLocation = useMapStore((state) => state.setSelectedLocation);
+  
+  const records = useRecordStore((state) => state.records);
+  const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
 
   // 장소 검색 실행
   const handleSearch = async (e: React.FormEvent) => {
