@@ -1,27 +1,32 @@
 /**
- * 마커 배경색 팔레트 (이쁘고 세련된 색상들)
+ * 마커 그라데이션 팔레트 (세련된 조합들)
  */
-const MARKER_COLORS = [
-  '#2563eb', // Blue
-  '#7c3aed', // Violet
-  '#db2777', // Pink
-  '#059669', // Emerald
-  '#d97706', // Amber
-  '#475569', // Slate
-  '#dc2626', // Red
-  '#0891b2', // Cyan
+const GRADIENTS = [
+  'linear-gradient(to right, #3b82f6, #8b5cf6)', // Blue to Violet
+  'linear-gradient(to right, #ec4899, #f43f5e)', // Pink to Rose
+  'linear-gradient(to right, #10b981, #3b82f6)', // Emerald to Blue
+  'linear-gradient(to right, #f59e0b, #ef4444)', // Amber to Red
+  'linear-gradient(to right, #8b5cf6, #d946ef)', // Violet to Fuchsia
+  'linear-gradient(to right, #06b6d4, #10b981)', // Cyan to Emerald
 ];
 
 /**
- * ID 문자열을 기반으로 고정된 색상을 반환합니다.
+ * 꼬리 부분에 사용할 단일 대표 색상 (그라데이션의 첫 번째 색상 추출)
  */
-const getMarkerColor = (id: string) => {
+const GET_REPRESENTATIVE_COLOR = (index: number) => {
+  const baseColors = ['#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'];
+  return baseColors[index % baseColors.length];
+};
+
+/**
+ * ID 문자열을 기반으로 고정된 그라데이션 인덱스를 반환합니다.
+ */
+const getGradientIndex = (id: string) => {
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = id.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const index = Math.abs(hash) % MARKER_COLORS.length;
-  return MARKER_COLORS[index];
+  return Math.abs(hash) % GRADIENTS.length;
 };
 
 /**
@@ -36,13 +41,6 @@ export const MARKER_TEMPLATES = {
         <div style="width: 10px; height: 10px; background: #3b82f6; border-radius: 50%;"></div>
       </div>
     </div>
-    <style>
-      @keyframes pulse {
-        0% { transform: scale(1); opacity: 0.4; }
-        70% { transform: scale(3); opacity: 0; }
-        100% { transform: scale(1); opacity: 0; }
-      }
-    </style>
   `,
 
   // 클릭 지점 마커 (기록 작성 시)
@@ -50,7 +48,6 @@ export const MARKER_TEMPLATES = {
     <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background: rgba(59, 130, 246, 0.2); border: 2px solid #3b82f6; border-radius: 50%; animation: clickPulse 1.5s infinite;">
       <div style="width: 8px; height: 8px; background: #3b82f6; border-radius: 50%;"></div>
     </div>
-    <style>@keyframes clickPulse { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }</style>
   `,
 
   // 클러스터 마커
@@ -67,14 +64,21 @@ export const MARKER_TEMPLATES = {
     </div>
   `,
 
-  // 개별 기록 마커 (말풍선 - 컬러 커스텀 가능)
+  // 개별 기록 마커 (그라데이션 말풍선)
   recordBubble: (comment: string, id: string, isNew?: boolean) => {
     const displayComment = comment.length > 12 ? `${comment.slice(0, 12)}…` : comment;
-    const color = getMarkerColor(id);
+    const gIndex = getGradientIndex(id);
+    const gradient = GRADIENTS[gIndex];
+    const repColor = GET_REPRESENTATIVE_COLOR(gIndex);
 
     return `
     <div class="record-marker">
-      <div class="speech-bubble" style="border-color: ${color};">
+      <div class="speech-bubble" style="
+        border: 2.5px solid transparent;
+        background-image: linear-gradient(#fff, #fff), ${gradient};
+        background-origin: border-box;
+        background-clip: padding-box, border-box;
+      ">
         ${displayComment}
         ${isNew ? `
           <div style="
@@ -96,7 +100,7 @@ export const MARKER_TEMPLATES = {
             z-index: 1;
           ">N</div>
         ` : ''}
-        <!-- 꼬리 부분 색상 동기화 (작동이 확인된 구조로 복구) -->
+        <!-- 꼬리 부분 -->
         <div style="
           position: absolute;
           left: 50%;
@@ -106,7 +110,7 @@ export const MARKER_TEMPLATES = {
           height: 0;
           border-left: 9px solid transparent;
           border-right: 9px solid transparent;
-          border-top: 9px solid ${color};
+          border-top: 9px solid ${repColor};
           z-index: -1;
         "></div>
         <div style="
