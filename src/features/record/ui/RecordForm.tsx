@@ -8,6 +8,7 @@ import { Button } from '@/src/shared/ui/button';
 import { Input } from '@/src/shared/ui/input';
 import { Label } from '@/src/shared/ui/label';
 import { Textarea } from '@/src/shared/ui/textarea';
+import { cn } from '@/src/shared/lib/utils';
 
 // 스키마에서 password를 optional로 변경하여 수정 모드(비밀번호 필드 없음)에서도 통과되게 함
 export const recordSchema = z.object({
@@ -38,6 +39,7 @@ export const RecordForm = ({
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<RecordFormValues>({
     resolver: zodResolver(recordSchema),
@@ -46,6 +48,8 @@ export const RecordForm = ({
       password: defaultValues?.password || '',
     },
   });
+
+  const commentValue = watch('comment');
 
   // 로컬 스토리지에서 마지막 비밀번호 불러오기 (작성 모드일 때만)
   useEffect(() => {
@@ -75,13 +79,22 @@ export const RecordForm = ({
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6 py-2">
       {/* 코멘트 */}
       <div className="space-y-2">
-        <Label htmlFor="comment" className="text-[13px] font-bold text-slate-700">
-          한 줄 코멘트
-        </Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="comment" className="text-[13px] font-bold text-slate-700">
+            한 줄 코멘트
+          </Label>
+          <span className={cn(
+            "text-[10px] font-medium",
+            commentValue.length >= 50 ? "text-red-500" : "text-slate-400"
+          )}>
+            {commentValue.length} / 50
+          </span>
+        </div>
         <Textarea
           id="comment"
           placeholder="지금 이곳의 생생한 상황을 한 줄로 알려주세요"
           {...register('comment')}
+          maxLength={50}
           className="h-20 resize-none border-slate-100 bg-slate-50/50 focus:bg-white"
         />
         {errors.comment && (

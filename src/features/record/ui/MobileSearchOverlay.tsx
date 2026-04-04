@@ -1,26 +1,27 @@
 'use client';
 
-import { useState } from 'react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { Input } from '@/src/shared/ui/input';
 import { Button } from '@/src/shared/ui/button';
 import { PlaceItem, Place } from '@/src/entities/record/ui/PlaceItem';
-import { useMapStore } from '@/src/shared/model/useMapStore';
+import { useSearchPlaces } from '@/src/features/record/model/useSearchPlaces';
 
 interface MobileSearchOverlayProps {
   onClose: () => void;
 }
 
 export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Place[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  
-  const setCenter = useMapStore((state) => state.setCenter);
-  const setSelectedLocation = useMapStore((state) => state.setSelectedLocation);
+  const { 
+    searchTerm, 
+    setSearchTerm, 
+    searchResults, 
+    isLoading, 
+    search, 
+    selectPlace,
+    hasSearched
+  } = useSearchPlaces();
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchTerm.trim()) return;
 
@@ -29,28 +30,13 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
       document.activeElement.blur();
     }
 
-    setIsLoading(true);
-    setHasSearched(true);
-    try {
-      const response = await fetch(`/api/places/search?query=${encodeURIComponent(searchTerm)}&start=1`);
-      if (!response.ok) throw new Error('검색 실패');
-      const data = await response.json();
-      setSearchResults(data.items || []);
-    } catch (error) {
-      console.error('Search failed:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    search(searchTerm);
   };
 
-  const handlePlaceClick = (place: Place) => {
-    const lng = parseInt(place.mapx, 10) / 10000000;
-    const lat = parseInt(place.mapy, 10) / 10000000;
-    if (isNaN(lat) || isNaN(lng)) return;
-
-    setCenter(lat, lng, 150); // 하단 모달을 고려해 위로 밀어올림
-    setSelectedLocation({ lat, lng });
-    onClose(); // 클릭 시 지도로 복귀
+  const handlePlaceSelect = (place: Place) => {
+    // 모바일에서는 하단 모달 고려해 150px 오프셋 적용
+    selectPlace(place, 150);
+    onClose();
   };
 
   return (
@@ -60,8 +46,8 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
         <Button variant="ghost" size="icon" onClick={onClose}>
           <ArrowLeft className="size-6" />
         </Button>
-        <form onSubmit={handleSearch} className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+        <form onSubmit={handleSearchSubmit} className="relative flex-1">
+          <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
           <Input
             autoFocus
             placeholder="장소나 주소 검색..."
@@ -82,7 +68,7 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
               <PlaceItem
                 key={`${place.mapx}-${place.mapy}-${idx}`}
                 place={place}
-                onClick={handlePlaceClick}
+                onClick={handlePlaceSelect}
                 className="border-slate-100 shadow-none hover:bg-slate-50"
               />
             ))}

@@ -4,12 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
 import { Button } from '@/src/shared/ui/button';
 import { fetchRecordById } from '@/src/entities/record/api/fetch-record-by-id';
-import { postReaction, ReactionType } from '@/src/entities/record/api/post-reaction';
-import { deleteReaction } from '@/src/entities/record/api/delete-reaction';
+import { ReactionType } from '@/src/entities/record/api/post-reaction';
 import { postRecordComplaint } from '@/src/entities/record/api/post-record-complaint';
 import { deleteRecord } from '@/src/entities/record/api/delete-record';
 import { Record } from '@/src/entities/record/model/types';
 import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
+import { useReaction } from '@/src/features/record/model/useReaction';
 import { AuthPasswordModal } from './AuthPasswordModal';
 import { EditRecordModal } from './EditRecordModal';
 import { cn } from '@/src/shared/lib/utils';
@@ -18,27 +18,6 @@ interface RecordDetailModalProps {
   onRefresh?: () => void;
 }
 
-interface SavedReaction {
-  id: string;
-  type: ReactionType;
-}
-
-const REACTIONS_STORAGE_KEY = 'nowhere_user_reactions_v3';
-const DEVICE_ID_KEY = 'nowhere_device_id';
-
-const getDeviceId = () => {
-  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-  if (!deviceId) {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-      deviceId = crypto.randomUUID();
-    } else {
-      deviceId = 'idx-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-    }
-    localStorage.setItem(DEVICE_ID_KEY, deviceId);
-  }
-  return deviceId;
-};
-
 const REACTION_LIST: { type: ReactionType; emoji: string; label: string }[] = [
   { type: 'like', emoji: '❤️', label: '좋아요' },
   { type: 'amazing', emoji: '😮', label: '놀라워요' },
@@ -46,123 +25,37 @@ const REACTION_LIST: { type: ReactionType; emoji: string; label: string }[] = [
   { type: 'sad', emoji: '😢', label: '슬퍼요' },
 ];
 
-export const RecordDetailModal = ({
-  onRefresh,
-}: RecordDetailModalProps) => {
+export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
   const selectedRecordId = useRecordStore((state) => state.selectedRecordId);
   const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
   const refreshRecords = useRecordStore((state) => state.refreshRecords);
-  
-  const [record, setRecord] = useState<Record | null>(null);
-  const [timeLeft, setTimeLeft] = useState<string>('');
-  const [userReaction, setUserReaction] = useState<SavedReaction | null>(null);
+
+  const [initialRecord, setInitialRecord] = useState<Record | null>(null);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'edit' | 'delete' | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [verifiedPassword, setVerifiedPassword] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
 
-  // 반응 기록 로드
-  useEffect(() => {
-    if (!selectedRecordId) {
-      setUserReaction(null);
-      setRecord(null);
-      return;
+  // 반응 처리 훅 사용
+  const { record, userReaction, isProcessing, handleReaction } = useReaction(
+    selectedRecordId,
+    initialRecord,
+  );
+
+  // 상세 데이터 초기 패칭
+  const fetchDetail = useCallback(async () => {
+    if (selectedRecordId) {
+      const data = await fetchRecordById(selectedRecordId);
+      setInitialRecord(data);
     }
-    const reactions = JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || '{}');
-    setUserReaction(reactions[selectedRecordId] || null);
   }, [selectedRecordId]);
-
-  const fetchDetail = useCallback(async (id: string) => {
-    const data = await fetchRecordById(id);
-    setRecord(data);
-  }, []);
 
   useEffect(() => {
     if (selectedRecordId && !isEditModalOpen) {
-      void fetchDetail(selectedRecordId);
+      void fetchDetail();
     }
   }, [selectedRecordId, isEditModalOpen, fetchDetail]);
-
-  useEffect(() => {
-    if (!record?.expires_at) return;
-
-    const now = new Date().getTime();
-    const expires = new Date(record.expires_at).getTime();
-    const diff = expires - now;
-
-    if (diff <= 0) {
-      setTimeLeft('만료됨');
-    } else {
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      setTimeLeft(`${hours}시간 ${mins}분 남음`);
-    }
-  }, [record?.expires_at]);
-
-  const handleReaction = async (type: ReactionType) => {
-    if (!selectedRecordId || !record || isProcessing) return;
-
-    const reactions = JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || '{}');
-    const existing = reactions[selectedRecordId] as SavedReaction | undefined;
-    const deviceId = getDeviceId();
-
-    setIsProcessing(true);
-    try {
-      if (existing && existing.type === type) {
-        await deleteReaction({ recordId: selectedRecordId, deviceId });
-        delete reactions[selectedRecordId];
-        localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
-        setUserReaction(null);
-        
-        setRecord(prev => {
-          if (!prev) return null;
-          const countKey = `${type}_count` as keyof Record;
-          const currentCount = prev[countKey] as number;
-          return {
-            ...prev,
-            [countKey]: Math.max(0, currentCount - 1),
-          };
-        });
-        return;
-      }
-
-      await deleteReaction({ recordId: selectedRecordId, deviceId });
-      const newReaction = await postReaction(selectedRecordId, type, deviceId);
-      
-      if (!newReaction) throw new Error('반응 등록 실패');
-
-      const savedData: SavedReaction = { id: newReaction.id, type };
-      reactions[selectedRecordId] = savedData;
-      localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
-      setUserReaction(savedData);
-
-      setRecord(prev => {
-        if (!prev) return null;
-        
-        const updates: Partial<Record> = {};
-        
-        if (existing) {
-          const oldKey = `${existing.type}_count` as keyof Record;
-          const oldCount = Number(prev[oldKey]) || 0;
-          Object.assign(updates, { [oldKey]: Math.max(0, oldCount - 1) });
-        }
-        
-        const newKey = `${type}_count` as keyof Record;
-        const newCount = Number(prev[newKey]) || 0;
-        Object.assign(updates, { [newKey]: newCount + 1 });
-        
-        return { ...prev, ...updates };
-      });
-
-    } catch (err) {
-      console.error('Reaction error:', err);
-      void fetchDetail(selectedRecordId);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleReportComplaint = async () => {
     if (!selectedRecordId) return;
@@ -190,10 +83,8 @@ export const RecordDetailModal = ({
         void refreshRecords();
         onRefresh?.();
       } else if (authMode === 'edit') {
-        const { postVerifyPassword } =
-          await import('@/src/entities/record/api/post-verify-password');
+        const { postVerifyPassword } = await import('@/src/entities/record/api/post-verify-password');
         await postVerifyPassword(selectedRecordId, password);
-
         setVerifiedPassword(password);
         setIsAuthModalOpen(false);
         setIsEditModalOpen(true);
@@ -204,20 +95,16 @@ export const RecordDetailModal = ({
     }
   };
 
+  if (!selectedRecordId) return null;
+
   return (
     <>
-      <Dialog 
-        open={!!selectedRecordId} 
-        onOpenChange={(open) => !open && setSelectedRecordId(null)}
-      >
+      <Dialog open={!!selectedRecordId} onOpenChange={(open) => !open && setSelectedRecordId(null)}>
         <DialogContent className="fixed top-auto right-4 bottom-4 left-auto w-[320px] translate-x-0 translate-y-0 overflow-hidden p-0 sm:max-w-[320px]">
-          <div className="flex flex-col pt-5">
+          <div className="flex flex-col">
             <div className="p-5 pb-0">
               <DialogHeader className="gap-1.5">
-                <div className="flex items-center justify-end">
-                  <span className="text-[11px] font-semibold text-red-500">{timeLeft}</span>
-                </div>
-                <DialogTitle className="mt-1 text-base leading-snug font-bold break-keep">
+                <DialogTitle className="mt-1 text-base leading-snug font-bold wrap-break-word">
                   {record?.comment}
                 </DialogTitle>
                 <p className="text-[10px] text-slate-400">
@@ -238,7 +125,7 @@ export const RecordDetailModal = ({
                     variant={isActive ? 'default' : 'outline'}
                     disabled={isProcessing}
                     className={cn(
-                      'flex h-14 flex-col items-center justify-center gap-1 border-slate-100 bg-slate-50/50 transition-all px-0',
+                      'flex h-14 flex-col items-center justify-center gap-1 border-slate-100 bg-slate-50/50 px-0 transition-all',
                       isActive
                         ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-600'
                         : 'hover:border-blue-100 hover:bg-blue-50',
@@ -246,10 +133,7 @@ export const RecordDetailModal = ({
                     onClick={() => handleReaction(item.type)}
                   >
                     <span className="text-lg leading-none">{item.emoji}</span>
-                    <span className={cn(
-                      'text-[10px] font-bold leading-none',
-                      isActive ? 'text-white' : 'text-slate-500'
-                    )}>
+                    <span className={cn('text-[10px] font-bold leading-none', isActive ? 'text-white' : 'text-slate-500')}>
                       {count}
                     </span>
                   </Button>
@@ -258,35 +142,11 @@ export const RecordDetailModal = ({
             </div>
 
             <div className="flex flex-row items-stretch gap-0 border-t border-slate-100 bg-slate-50/30 p-0 sm:justify-start">
-              <Button
-                variant="ghost"
-                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-500"
-                onClick={handleReportComplaint}
-              >
-                신고
-              </Button>
+              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-500" onClick={handleReportComplaint}>신고</Button>
               <div className="w-px bg-slate-100" />
-              <Button
-                variant="ghost"
-                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-slate-900"
-                onClick={() => {
-                  setAuthMode('edit');
-                  setIsAuthModalOpen(true);
-                }}
-              >
-                수정
-              </Button>
+              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-slate-900" onClick={() => { setAuthMode('edit'); setIsAuthModalOpen(true); }}>수정</Button>
               <div className="w-px bg-slate-100" />
-              <Button
-                variant="ghost"
-                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                onClick={() => {
-                  setAuthMode('delete');
-                  setIsAuthModalOpen(true);
-                }}
-              >
-                삭제
-              </Button>
+              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-600" onClick={() => { setAuthMode('delete'); setIsAuthModalOpen(true); }}>삭제</Button>
             </div>
           </div>
         </DialogContent>
@@ -298,6 +158,7 @@ export const RecordDetailModal = ({
         onConfirm={handleAuthConfirm}
         title={authMode === 'edit' ? '기록 수정' : '기록 삭제'}
         description="비밀번호를 입력해주세요."
+        isDelete={authMode === 'delete'}
       />
 
       <EditRecordModal
@@ -307,7 +168,7 @@ export const RecordDetailModal = ({
         onOpenChange={setIsEditModalOpen}
         onSuccess={() => {
           setIsEditModalOpen(false);
-          if (selectedRecordId) void fetchDetail(selectedRecordId);
+          void fetchDetail();
           void refreshRecords();
           onRefresh?.();
         }}
