@@ -9,9 +9,10 @@ import { Input } from '@/src/shared/ui/input';
 import { Label } from '@/src/shared/ui/label';
 import { Textarea } from '@/src/shared/ui/textarea';
 
+// 스키마에서 password를 optional로 변경하여 수정 모드(비밀번호 필드 없음)에서도 통과되게 함
 export const recordSchema = z.object({
   comment: z.string().min(1, '한 줄 코멘트를 입력해주세요').max(50, '50자 이내로 작성해주세요'),
-  password: z.string().min(4, '비밀번호는 4자리 이상이어야 합니다'),
+  password: z.string().optional(),
 });
 
 export type RecordFormValues = z.infer<typeof recordSchema>;
@@ -46,7 +47,7 @@ export const RecordForm = ({
     },
   });
 
-  // 로컬 스토리지에서 마지막 비밀번호 불러오기
+  // 로컬 스토리지에서 마지막 비밀번호 불러오기 (작성 모드일 때만)
   useEffect(() => {
     if (!hidePassword && !defaultValues?.password) {
       const savedPassword = localStorage.getItem(PASSWORD_STORAGE_KEY);
@@ -56,11 +57,18 @@ export const RecordForm = ({
     }
   }, [hidePassword, defaultValues?.password, setValue]);
 
-  const handleFormSubmit = async (values: RecordFormValues) => {
-    if (!hidePassword) {
-      localStorage.setItem(PASSWORD_STORAGE_KEY, values.password);
+  const handleFormSubmit = async (data: RecordFormValues) => {
+    // 작성 모드인데 비밀번호가 없거나 짧은 경우 수동 체크
+    if (!hidePassword && (!data.password || data.password.length < 4)) {
+      alert('비밀번호는 4자리 이상이어야 합니다.');
+      return;
     }
-    await onSubmit(values);
+
+    if (!hidePassword) {
+      localStorage.setItem(PASSWORD_STORAGE_KEY, data.password || '');
+    }
+    
+    await onSubmit(data);
   };
 
   return (

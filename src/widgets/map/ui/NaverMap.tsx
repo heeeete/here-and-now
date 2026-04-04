@@ -7,6 +7,7 @@ import { useNaverMap } from '../model/useNaverMap';
 import { useMarkers } from '../model/useMarkers';
 import { useMapStore } from '@/src/shared/model/useMapStore';
 import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
+import { useMobile } from '@/src/shared/lib/hooks/useMobile';
 
 /**
  * NaverMap 위젯
@@ -19,6 +20,7 @@ export const NaverMap = ({
   onBoundsChange,
   className,
 }: Omit<NaverMapProps, 'records' | 'selectedLocation'>) => {
+  const isMobile = useMobile();
   // 스토어에서 상태 개별 구독 (Selector)
   const storeCenter = useMapStore((state) => state.center);
   const setCenter = useMapStore((state) => state.setCenter);
@@ -30,7 +32,8 @@ export const NaverMap = ({
 
   // 1. 지도 인스턴스 초기화 및 기본 이벤트 관리
   const { mapRef, map, moveToCurrentLocation } = useNaverMap((lat, lng) => {
-    setCenter(lat, lng);
+    // 모바일에서는 하단 모달을 고려해 지도를 약간 위로 밀어올림 (150px)
+    setCenter(lat, lng, isMobile ? 150 : 0);
     setSelectedLocation({ lat, lng });
     onMapClick?.(lat, lng);
   }, onBoundsChange);
@@ -61,8 +64,21 @@ export const NaverMap = ({
   // 4. 전역 스토어의 중심점 변경 시 지도 이동
   useEffect(() => {
     if (map && storeCenter) {
-      const newCenter = new naver.maps.LatLng(storeCenter.lat, storeCenter.lng);
-      map.panTo(newCenter);
+      const targetLatLng = new naver.maps.LatLng(storeCenter.lat, storeCenter.lng);
+      
+      if (storeCenter.yOffset) {
+        const projection = map.getProjection();
+        // 1. 타겟 위경도를 픽셀 좌표로 변환
+        const targetPoint = projection.fromCoordToOffset(targetLatLng);
+        // 2. 픽셀 좌표에 오프셋 적용 (위로 150px 밀어올리려면 타겟을 150px 아래로 설정)
+        const offsetPoint = new naver.maps.Point(targetPoint.x, targetPoint.y + storeCenter.yOffset);
+        // 3. 보정된 픽셀 좌표를 다시 위경도로 변환
+        const offsetLatLng = projection.fromOffsetToCoord(offsetPoint);
+        
+        map.panTo(offsetLatLng);
+      } else {
+        map.panTo(targetLatLng);
+      }
     }
   }, [map, storeCenter]);
 

@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
 import { Button } from '@/src/shared/ui/button';
 import { fetchRecordById } from '@/src/entities/record/api/fetch-record-by-id';
-import { postReaction } from '@/src/entities/record/api/post-reaction';
+import { postReaction, ReactionType } from '@/src/entities/record/api/post-reaction';
+import { deleteReaction } from '@/src/entities/record/api/delete-reaction';
 import { postRecordComplaint } from '@/src/entities/record/api/post-record-complaint';
 import { deleteRecord } from '@/src/entities/record/api/delete-record';
 import { Record } from '@/src/entities/record/model/types';
@@ -17,21 +18,50 @@ interface RecordDetailModalProps {
   onRefresh?: () => void;
 }
 
-const REACTIONS_STORAGE_KEY = 'nowhere_user_reactions';
+interface SavedReaction {
+  id: string;
+  type: ReactionType;
+}
+
+const REACTIONS_STORAGE_KEY = 'nowhere_user_reactions_v3';
+const DEVICE_ID_KEY = 'nowhere_device_id';
+
+const getDeviceId = () => {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  if (!deviceId) {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      deviceId = crypto.randomUUID();
+    } else {
+      deviceId = 'idx-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+    }
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  return deviceId;
+};
+
+const REACTION_LIST: { type: ReactionType; emoji: string; label: string }[] = [
+  { type: 'like', emoji: '❤️', label: '좋아요' },
+  { type: 'amazing', emoji: '😮', label: '놀라워요' },
+  { type: 'funny', emoji: '😂', label: '웃겨요' },
+  { type: 'sad', emoji: '😢', label: '슬퍼요' },
+];
 
 export const RecordDetailModal = ({
   onRefresh,
 }: RecordDetailModalProps) => {
-  const { selectedRecordId, setSelectedRecordId, refreshRecords } = useRecordStore();
+  const selectedRecordId = useRecordStore((state) => state.selectedRecordId);
+  const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
+  const refreshRecords = useRecordStore((state) => state.refreshRecords);
   
   const [record, setRecord] = useState<Record | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
-  const [userReaction, setUserReaction] = useState<'helpful' | 'ended' | null>(null);
+  const [userReaction, setUserReaction] = useState<SavedReaction | null>(null);
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'edit' | 'delete' | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [verifiedPassword, setVerifiedPassword] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // 반응 기록 로드
   useEffect(() => {
@@ -44,17 +74,16 @@ export const RecordDetailModal = ({
     setUserReaction(reactions[selectedRecordId] || null);
   }, [selectedRecordId]);
 
-  const fetchDetail = useCallback(async () => {
-    if (!selectedRecordId) return;
-    const data = await fetchRecordById(selectedRecordId);
+  const fetchDetail = useCallback(async (id: string) => {
+    const data = await fetchRecordById(id);
     setRecord(data);
-  }, [selectedRecordId]);
+  }, []);
 
   useEffect(() => {
-    if (selectedRecordId) {
-      void fetchDetail();
+    if (selectedRecordId && !isEditModalOpen) {
+      void fetchDetail(selectedRecordId);
     }
-  }, [selectedRecordId, fetchDetail]);
+  }, [selectedRecordId, isEditModalOpen, fetchDetail]);
 
   useEffect(() => {
     if (!record?.expires_at) return;
@@ -72,23 +101,66 @@ export const RecordDetailModal = ({
     }
   }, [record?.expires_at]);
 
-  const handleReaction = async (type: 'helpful' | 'ended') => {
-    if (!selectedRecordId) return;
+  const handleReaction = async (type: ReactionType) => {
+    if (!selectedRecordId || !record || isProcessing) return;
 
     const reactions = JSON.parse(localStorage.getItem(REACTIONS_STORAGE_KEY) || '{}');
-    if (reactions[selectedRecordId]) {
-      alert('이미 반응을 남기셨습니다!');
-      return;
-    }
+    const existing = reactions[selectedRecordId] as SavedReaction | undefined;
+    const deviceId = getDeviceId();
 
+    setIsProcessing(true);
     try {
-      await postReaction(selectedRecordId, type);
-      reactions[selectedRecordId] = type;
+      if (existing && existing.type === type) {
+        await deleteReaction({ recordId: selectedRecordId, deviceId });
+        delete reactions[selectedRecordId];
+        localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
+        setUserReaction(null);
+        
+        setRecord(prev => {
+          if (!prev) return null;
+          const countKey = `${type}_count` as keyof Record;
+          const currentCount = prev[countKey] as number;
+          return {
+            ...prev,
+            [countKey]: Math.max(0, currentCount - 1),
+          };
+        });
+        return;
+      }
+
+      await deleteReaction({ recordId: selectedRecordId, deviceId });
+      const newReaction = await postReaction(selectedRecordId, type, deviceId);
+      
+      if (!newReaction) throw new Error('반응 등록 실패');
+
+      const savedData: SavedReaction = { id: newReaction.id, type };
+      reactions[selectedRecordId] = savedData;
       localStorage.setItem(REACTIONS_STORAGE_KEY, JSON.stringify(reactions));
-      setUserReaction(type);
-      void fetchDetail();
-    } catch {
-      alert('반응을 등록하지 못했습니다.');
+      setUserReaction(savedData);
+
+      setRecord(prev => {
+        if (!prev) return null;
+        
+        const updates: Partial<Record> = {};
+        
+        if (existing) {
+          const oldKey = `${existing.type}_count` as keyof Record;
+          const oldCount = Number(prev[oldKey]) || 0;
+          Object.assign(updates, { [oldKey]: Math.max(0, oldCount - 1) });
+        }
+        
+        const newKey = `${type}_count` as keyof Record;
+        const newCount = Number(prev[newKey]) || 0;
+        Object.assign(updates, { [newKey]: newCount + 1 });
+        
+        return { ...prev, ...updates };
+      });
+
+    } catch (err) {
+      console.error('Reaction error:', err);
+      void fetchDetail(selectedRecordId);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -154,39 +226,35 @@ export const RecordDetailModal = ({
               </DialogHeader>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 p-5 pt-4">
-              <Button
-                variant={userReaction === 'helpful' ? 'default' : 'outline'}
-                disabled={!!userReaction}
-                className={cn(
-                  'flex h-12 flex-col items-center justify-center gap-0 border-slate-100 bg-slate-50/50 transition-all',
-                  userReaction === 'helpful'
-                    ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-600'
-                    : 'hover:border-blue-100 hover:bg-blue-50',
-                )}
-                onClick={() => handleReaction('helpful')}
-              >
-                <span className={cn('text-[11px] font-bold', userReaction === 'helpful' ? 'text-white' : 'text-slate-700')}>도움됐어요</span>
-                <span className={cn('text-[10px] font-medium', userReaction === 'helpful' ? 'text-blue-100' : 'text-blue-500')}>
-                  {record?.helpful_count || 0}
-                </span>
-              </Button>
-              <Button
-                variant={userReaction === 'ended' ? 'default' : 'outline'}
-                disabled={!!userReaction}
-                className={cn(
-                  'flex h-12 flex-col items-center justify-center gap-0 border-slate-100 bg-slate-50/50 transition-all',
-                  userReaction === 'ended'
-                    ? 'border-red-600 bg-red-600 text-white hover:bg-red-600'
-                    : 'hover:border-red-100 hover:bg-blue-50',
-                )}
-                onClick={() => handleReaction('ended')}
-              >
-                <span className={cn('text-[11px] font-bold', userReaction === 'ended' ? 'text-white' : 'text-slate-700')}>끝났어요</span>
-                <span className={cn('text-[10px] font-medium', userReaction === 'ended' ? 'text-red-100' : 'text-red-500')}>
-                  {record?.ended_count || 0}
-                </span>
-              </Button>
+            <div className="grid grid-cols-4 gap-1.5 p-5 pt-4">
+              {REACTION_LIST.map((item) => {
+                const isActive = userReaction?.type === item.type;
+                const countKey = `${item.type}_count` as keyof Record;
+                const count = record ? (record[countKey] as number) || 0 : 0;
+
+                return (
+                  <Button
+                    key={item.type}
+                    variant={isActive ? 'default' : 'outline'}
+                    disabled={isProcessing}
+                    className={cn(
+                      'flex h-14 flex-col items-center justify-center gap-1 border-slate-100 bg-slate-50/50 transition-all px-0',
+                      isActive
+                        ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-600'
+                        : 'hover:border-blue-100 hover:bg-blue-50',
+                    )}
+                    onClick={() => handleReaction(item.type)}
+                  >
+                    <span className="text-lg leading-none">{item.emoji}</span>
+                    <span className={cn(
+                      'text-[10px] font-bold leading-none',
+                      isActive ? 'text-white' : 'text-slate-500'
+                    )}>
+                      {count}
+                    </span>
+                  </Button>
+                );
+              })}
             </div>
 
             <div className="flex flex-row items-stretch gap-0 border-t border-slate-100 bg-slate-50/30 p-0 sm:justify-start">
@@ -239,7 +307,7 @@ export const RecordDetailModal = ({
         onOpenChange={setIsEditModalOpen}
         onSuccess={() => {
           setIsEditModalOpen(false);
-          void fetchDetail();
+          if (selectedRecordId) void fetchDetail(selectedRecordId);
           void refreshRecords();
           onRefresh?.();
         }}

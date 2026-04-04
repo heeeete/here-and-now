@@ -29,7 +29,16 @@ export const EditRecordModal = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = async (values: RecordFormValues) => {
-    if (!record?.id) return;
+    if (!record?.id) {
+      alert('수정할 기록의 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    if (!password) {
+      alert('인증 정보가 만료되었습니다. 다시 시도해주세요.');
+      onOpenChange(false);
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -37,6 +46,7 @@ export const EditRecordModal = ({
       onSuccess();
       onOpenChange(false);
     } catch (error: unknown) {
+      console.error('Update failed:', error);
       const message = error instanceof Error ? error.message : '수정 중 오류가 발생했습니다.';
       alert(message);
     } finally {
@@ -55,7 +65,7 @@ export const EditRecordModal = ({
             </p>
           </DialogHeader>
 
-          {record && (
+          {isOpen && record && (
             <RecordForm
               defaultValues={{
                 comment: record.comment || '',

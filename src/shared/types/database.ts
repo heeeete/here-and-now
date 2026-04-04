@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -42,18 +42,21 @@ export type Database = {
       reactions: {
         Row: {
           created_at: string
+          device_id: string
           id: string
           record_id: string
           type: string
         }
         Insert: {
           created_at?: string
+          device_id: string
           id?: string
           record_id: string
           type: string
         }
         Update: {
           created_at?: string
+          device_id?: string
           id?: string
           record_id?: string
           type?: string
@@ -72,7 +75,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "records"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       records: {
@@ -115,51 +118,58 @@ export type Database = {
     Views: {
       record_summary: {
         Row: {
+          amazing_count: number | null
           comment: string | null
           complaint_count: number | null
           created_at: string | null
-          ended_count: number | null
           expires_at: string | null
-          helpful_count: number | null
+          funny_count: number | null
           id: string | null
           image_url: string | null
           latitude: number | null
+          like_count: number | null
           longitude: number | null
           password: string | null
-          still_valid_count: number | null
+          sad_count: number | null
         }
         Insert: {
+          amazing_count?: never
           comment?: string | null
           complaint_count?: number | null
           created_at?: string | null
-          ended_count?: never
           expires_at?: string | null
-          helpful_count?: never
+          funny_count?: never
           id?: string | null
           image_url?: string | null
           latitude?: number | null
+          like_count?: never
           longitude?: number | null
           password?: string | null
-          still_valid_count?: never
+          sad_count?: never
         }
         Update: {
+          amazing_count?: never
           comment?: string | null
           complaint_count?: number | null
           created_at?: string | null
-          ended_count?: never
           expires_at?: string | null
-          helpful_count?: never
+          funny_count?: never
           id?: string | null
           image_url?: string | null
           latitude?: number | null
+          like_count?: never
           longitude?: number | null
           password?: string | null
-          still_valid_count?: never
+          sad_count?: never
         }
         Relationships: []
       }
     }
     Functions: {
+      delete_device_reaction: {
+        Args: { p_device_id: string; p_record_id: string }
+        Returns: undefined
+      }
       increment_record_complaint_count: {
         Args: { record_id: string }
         Returns: undefined

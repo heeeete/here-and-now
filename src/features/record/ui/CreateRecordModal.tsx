@@ -26,6 +26,7 @@ export const CreateRecordModal = ({ onSuccess }: CreateRecordModalProps) => {
         latitude: selectedLocation.lat,
         longitude: selectedLocation.lng,
         ...values,
+        password: values.password as string, // 타입 단언 추가
       });
 
       // 데이터 새로고침

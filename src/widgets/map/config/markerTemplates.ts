@@ -42,13 +42,33 @@ export const MARKER_TEMPLATES = {
   `,
 
   // 개별 기록 마커 (말풍선)
-  recordBubble: (comment: string) => {
+  recordBubble: (comment: string, isNew?: boolean) => {
     const displayComment = comment.length > 12 ? `${comment.slice(0, 12)}…` : comment;
 
     return `
     <div class="record-marker">
       <div class="speech-bubble">
         ${displayComment}
+        ${isNew ? `
+          <div style="
+            position: absolute; 
+            top: -6px; 
+            right: -6px; 
+            width: 16px; 
+            height: 16px; 
+            background: #fbbf24; 
+            border: 1.5px solid white;
+            border-radius: 50%; 
+            color: #92400e; 
+            font-size: 9px; 
+            font-weight: 900; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 1;
+          ">N</div>
+        ` : ''}
       </div>
     </div>
   `;
