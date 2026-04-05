@@ -64,12 +64,13 @@ export const useMarkers = (map: naver.maps.Map | null, onMarkerClick?: (id: stri
 
   // 기록 마커 및 클러스터 렌더링 (최적화 버전)
   const renderRecords = useCallback(
-    (records: Record[]) => {
+    (records: Record[], selectedRecordId: string | null) => {
       if (!map) return;
 
-      const currentZoom = map.getZoom();
+      // const currentZoom = map.getZoom();
       const projection = map.getProjection();
 
+      /*
       // 줌 레벨별 클러스터링 반경 (px)
       const radiusMap: { [zoom: number]: number } = {
         20: 20,
@@ -81,10 +82,12 @@ export const useMarkers = (map: naver.maps.Map | null, onMarkerClick?: (id: stri
         14: 64,
       };
       const clusterRadius = radiusMap[currentZoom] || 80;
+      */
 
       // 1. 기존 마커 모두 제거 (간단한 구현을 위해 전체 초기화 유지하되, 계산 효율성 증대)
       clearMarkers();
 
+      /*
       // 2. 클러스터링 계산 (공간 기반 최적화는 추후 고려, 현재는 데이터 무결성 우선)
       const clusters: {
         center: Record;
@@ -121,47 +124,63 @@ export const useMarkers = (map: naver.maps.Map | null, onMarkerClick?: (id: stri
           });
         }
       });
+      */
+
+      // 동일 좌표(위경도) 기반 그룹화
+      const coordGroups = new Map<string, Record[]>();
+      
+      records.forEach((record) => {
+        const key = `${record.latitude},${record.longitude}`;
+        if (!coordGroups.has(key)) {
+          coordGroups.set(key, []);
+        }
+        coordGroups.get(key)!.push(record);
+      });
+
+      const clusters = Array.from(coordGroups.values()).map((members) => {
+        // 작성일순(오름차순) 정렬하여 가장 오래된 기록을 대표로 선정
+        const sortedMembers = [...members].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        const center = sortedMembers[0];
+        
+        return {
+          center,
+          centerPixel: projection.fromCoordToOffset(new naver.maps.LatLng(center.latitude, center.longitude)),
+          count: members.length,
+          members: sortedMembers,
+        };
+      });
 
       // 3. 마커 생성 및 등록
       clusters.forEach((cluster) => {
         const position = new naver.maps.LatLng(cluster.center.latitude, cluster.center.longitude);
-        let marker: naver.maps.Marker;
+        
+        // 개별 기록 마커 (말풍선) - 항상 이 형태를 사용
+        const record = cluster.center;
+        
+        // 해당 좌표 그룹의 멤버 중 하나라도 선택되었는지 확인
+        const isSelected = cluster.members.some((m) => m.id === selectedRecordId);
+        
+        const extraCount = cluster.count > 1 ? cluster.count - 1 : 0;
 
-        if (cluster.count > 1) {
-          // 클러스터 마커
-          marker = new naver.maps.Marker({
-            position,
-            map,
-            icon: {
-              content: MARKER_TEMPLATES.cluster(cluster.count),
-              anchor: new naver.maps.Point(22, 22),
-            },
-          });
+        // 2시간 이내면 NEW 뱃지 표시
+        const isNew = new Date().getTime() - new Date(record.created_at).getTime() < 2 * 60 * 60 * 1000;
 
-          naver.maps.Event.addListener(marker, 'click', () => {
-            map.setZoom(map.getZoom() + 2, true);
-            map.panTo(position);
-          });
-        } else {
-          // 개별 기록 마커 (말풍선)
-          const record = cluster.members[0];
+        const marker = new naver.maps.Marker({
+          position,
+          map,
+          icon: {
+            content: MARKER_TEMPLATES.recordBubble(record.comment, record.id, isNew, isSelected, extraCount),
+            anchor: new naver.maps.Point(0, 0),
+          },
+          zIndex: isSelected ? 1000 : 100,
+        });
 
-          // 2시간 이내면 NEW 뱃지 표시
-          const isNew = new Date().getTime() - new Date(record.created_at).getTime() < 2 * 60 * 60 * 1000;
+        naver.maps.Event.addListener(marker, 'click', () => {
+          onMarkerClick?.(record.id);
+        });
 
-          marker = new naver.maps.Marker({
-            position,
-            map,
-            icon: {
-              content: MARKER_TEMPLATES.recordBubble(record.comment, record.id, isNew),
-              anchor: new naver.maps.Point(0, 0),
-            },
-          });
-          naver.maps.Event.addListener(marker, 'click', () => {
-            map.panTo(position); // 마커 위치로 부드럽게 이동 추가
-            onMarkerClick?.(record.id);
-          });
-        }
         markersRef.current.push(marker);
       });
     },

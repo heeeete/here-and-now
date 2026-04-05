@@ -35,20 +35,35 @@ const ReactionBadge = ({ emoji, count, className }: ReactionBadgeProps) => {
 
 export const RecordItem = ({ record, onClick, variant = 'list', className }: RecordItemProps) => {
   const setCenter = useMapStore((state) => state.setCenter);
-  
+
   const date = new Date(record.created_at);
+  const now = new Date();
+  
+  // 날짜 비교 (오늘/어제/그외)
+  const isToday = date.toDateString() === now.toDateString();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
 
   const timeString = new Intl.DateTimeFormat('ko-KR', {
     hour: '2-digit',
     minute: '2-digit',
+    hour12: true,
   }).format(date);
+
+  const displayTime = isToday 
+    ? timeString 
+    : isYesterday 
+      ? `어제 ${timeString}` 
+      : `${date.getMonth() + 1}월 ${date.getDate()}일 ${timeString}`;
 
   const isCard = variant === 'card';
 
   const handleItemClick = () => {
-    // 1. 지도 이동 (모바일 카드일 경우 모달을 고려해 오프셋 150px 적용)
-    setCenter(record.latitude, record.longitude, isCard ? 150 : 0);
-    
+    // 1. 지도 이동 및 줌 (모바일 카드일 경우 모달을 고려해 오프셋 150px 적용)
+    // 줌 레벨을 18로 설정하여 부드럽게 이동과 확대를 동시에 수행
+    setCenter(record.latitude, record.longitude, isCard ? 150 : 0, 18);
+
     // 2. 상세 모달 오픈 등 기존 액션 수행
     onClick(record.id);
   };
@@ -65,7 +80,7 @@ export const RecordItem = ({ record, onClick, variant = 'list', className }: Rec
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium text-slate-400 tabular-nums">{timeString}</span>
+        <span className="text-[11px] font-medium text-slate-400 tabular-nums">{displayTime}</span>
       </div>
 
       <p

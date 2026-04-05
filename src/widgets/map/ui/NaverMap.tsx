@@ -29,6 +29,7 @@ export const NaverMap = ({
   const setSelectedLocation = useMapStore((state) => state.setSelectedLocation);
 
   const records = useRecordStore((state) => state.records);
+  const selectedRecordId = useRecordStore((state) => state.selectedRecordId);
   const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
 
   // 1. 지도 인스턴스 초기화 및 기본 이벤트 관리
@@ -36,6 +37,7 @@ export const NaverMap = ({
     // 모바일에서는 하단 모달을 고려해 지도를 약간 위로 밀어올림 (150px)
     setCenter(lat, lng, isMobile ? 150 : 0);
     setSelectedLocation({ lat, lng });
+    setSelectedRecordId(null); // 지도 클릭 시 선택된 마커 해제
     onMapClick?.(lat, lng);
   }, onBoundsChange);
 
@@ -49,7 +51,7 @@ export const NaverMap = ({
   useEffect(() => {
     if (!map) return;
 
-    const handleIdle = () => renderRecords(records);
+    const handleIdle = () => renderRecords(records, selectedRecordId);
     const idleListener = naver.maps.Event.addListener(map, 'idle', handleIdle);
     const zoomListener = naver.maps.Event.addListener(map, 'zoom_changed', handleIdle);
 
@@ -60,26 +62,35 @@ export const NaverMap = ({
       naver.maps.Event.removeListener(idleListener);
       naver.maps.Event.removeListener(zoomListener);
     };
-  }, [map, records, renderRecords]);
+  }, [map, records, selectedRecordId, renderRecords]);
 
-  // 4. 전역 스토어의 중심점 변경 시 지도 이동
+  // 4. 전역 스토어의 중심점 및 줌 레벨 변경 시 지도 이동/확대 (통합 처리)
   useEffect(() => {
     if (map && storeCenter) {
       const targetLatLng = new naver.maps.LatLng(storeCenter.lat, storeCenter.lng);
+      const targetZoom = storeCenter.zoom ?? map.getZoom();
       
+      let finalLatLng = targetLatLng;
+
       if (storeCenter.yOffset) {
         const projection = map.getProjection();
+        const currentZoom = map.getZoom();
+        
+        // 줌 레벨 차이에 따른 픽셀 비율 계산 (1단계마다 2배 차이)
+        // 목표 줌에서의 150px이 현재 줌에서는 몇 픽셀인지 역산합니다.
+        const ratio = Math.pow(2, currentZoom - targetZoom);
+        const adjustedOffset = storeCenter.yOffset * ratio;
+
         // 1. 타겟 위경도를 픽셀 좌표로 변환
         const targetPoint = projection.fromCoordToOffset(targetLatLng);
-        // 2. 픽셀 좌표에 오프셋 적용 (위로 150px 밀어올리려면 타겟을 150px 아래로 설정)
-        const offsetPoint = new naver.maps.Point(targetPoint.x, targetPoint.y + storeCenter.yOffset);
+        // 2. 보정된 픽셀 좌표에 오프셋 적용
+        const offsetPoint = new naver.maps.Point(targetPoint.x, targetPoint.y + adjustedOffset);
         // 3. 보정된 픽셀 좌표를 다시 위경도로 변환
-        const offsetLatLng = projection.fromOffsetToCoord(offsetPoint);
-        
-        map.panTo(offsetLatLng);
-      } else {
-        map.panTo(targetLatLng);
+        finalLatLng = projection.fromOffsetToCoord(offsetPoint) as naver.maps.LatLng;
       }
+
+      // 이동과 줌을 동시에 부드럽게 수행
+      map.morph(finalLatLng, targetZoom);
     }
   }, [map, storeCenter]);
 

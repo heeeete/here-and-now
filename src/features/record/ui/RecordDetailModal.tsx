@@ -9,6 +9,7 @@ import { postRecordComplaint } from '@/src/entities/record/api/post-record-compl
 import { deleteRecord } from '@/src/entities/record/api/delete-record';
 import { Record } from '@/src/entities/record/model/types';
 import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
+import { useMapStore } from '@/src/shared/model/useMapStore';
 import { useReaction } from '@/src/features/record/model/useReaction';
 import { AuthPasswordModal } from './AuthPasswordModal';
 import { EditRecordModal } from './EditRecordModal';
@@ -26,9 +27,13 @@ const REACTION_LIST: { type: ReactionType; emoji: string; label: string }[] = [
 ];
 
 export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
+  const records = useRecordStore((state) => state.records);
   const selectedRecordId = useRecordStore((state) => state.selectedRecordId);
   const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
   const refreshRecords = useRecordStore((state) => state.refreshRecords);
+  const updateRecord = useRecordStore((state) => state.updateRecord);
+  
+  const setSelectedLocation = useMapStore((state) => state.setSelectedLocation);
 
   const [detailData, setDetailData] = useState<Record | null>(null);
 
@@ -37,26 +42,42 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [verifiedPassword, setVerifiedPassword] = useState('');
 
-  // 상세 데이터 패칭 핸들러 (훅에 콜백으로 전달)
+  // 상세 데이터 패칭 핸들러 (서버에서 최신 데이터 가져오기 및 스토어 동기화)
   const fetchDetail = useCallback(async () => {
     if (selectedRecordId) {
       const data = await fetchRecordById(selectedRecordId);
-      setDetailData(data);
+      if (data) {
+        setDetailData(data);
+        updateRecord(selectedRecordId, data); // 전역 스토어 데이터 동기화
+      }
     }
-  }, [selectedRecordId]);
-
-  // 반응 처리 훅 사용
-  const { userReactions, isProcessing, handleReaction } = useReaction(
-    selectedRecordId,
-    fetchDetail
-  );
+  }, [selectedRecordId, updateRecord]);
 
   // 모달이 열리거나 ID가 바뀔 때 데이터 로드
   useEffect(() => {
-    if (selectedRecordId && !isEditModalOpen) {
+    if (!selectedRecordId) {
+      setDetailData(null);
+      return;
+    }
+
+    // 1. 이미 스토어에 있는 데이터에서 찾기 (네트워크 요청 없음)
+    const existingRecord = records.find((r) => r.id === selectedRecordId);
+    if (existingRecord) {
+      setDetailData(existingRecord);
+      return;
+    }
+
+    // 2. 스토어에 없는 경우에만 서버에서 가져오기 (예: 직접 링크 접속 등)
+    if (!isEditModalOpen) {
       void fetchDetail();
     }
-  }, [selectedRecordId, isEditModalOpen, fetchDetail]);
+  }, [selectedRecordId, records, isEditModalOpen, fetchDetail]);
+
+  // 반응 처리 훅 사용 (최신 카운트 반영을 위해 fetchDetail 사용)
+  const { userReactions, isProcessing, handleReaction } = useReaction(
+    selectedRecordId,
+    fetchDetail,
+  );
 
   const handleReportComplaint = async () => {
     if (!selectedRecordId) return;
@@ -84,7 +105,8 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
         void refreshRecords();
         onRefresh?.();
       } else if (authMode === 'edit') {
-        const { postVerifyPassword } = await import('@/src/entities/record/api/post-verify-password');
+        const { postVerifyPassword } =
+          await import('@/src/entities/record/api/post-verify-password');
         await postVerifyPassword(selectedRecordId, password);
         setVerifiedPassword(password);
         setIsAuthModalOpen(false);
@@ -96,20 +118,34 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
     }
   };
 
+  const handleCreateHere = () => {
+    if (!detailData) return;
+
+    // 현재 기록의 위치를 선택된 위치로 설정하여 기록 생성 모달이 열리도록 유도
+    setSelectedLocation({
+      lat: detailData.latitude,
+      lng: detailData.longitude,
+    });
+
+    // 상세 모달 닫기
+    setSelectedRecordId(null);
+  };
+
   if (!selectedRecordId) return null;
 
   return (
     <>
       <Dialog open={!!selectedRecordId} onOpenChange={(open) => !open && setSelectedRecordId(null)}>
-        <DialogContent className="fixed top-auto right-4 bottom-4 left-1/2 w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 overflow-hidden p-0 sm:max-w-[320px] md:left-auto md:right-4 md:translate-x-0">
-          <div className="flex flex-col">
+        <DialogContent className="fixed top-auto right-4 bottom-4 left-1/2 w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 overflow-hidden border-0 p-0 sm:max-w-[320px] md:right-4 md:left-auto md:translate-x-0">
+          <div className="flex flex-col border-0">
             <div className="p-5 pb-0">
               <DialogHeader className="gap-1.5">
                 <DialogTitle className="mt-1 text-base leading-snug font-bold wrap-break-word">
                   {detailData?.comment}
                 </DialogTitle>
                 <p className="text-[10px] text-slate-400">
-                  {detailData?.created_at && new Date(detailData.created_at).toLocaleTimeString()} 기록
+                  {detailData?.created_at && new Date(detailData.created_at).toLocaleTimeString()}{' '}
+                  기록
                 </p>
               </DialogHeader>
             </div>
@@ -134,7 +170,12 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
                     onClick={() => handleReaction(item.type)}
                   >
                     <span className="text-lg leading-none">{item.emoji}</span>
-                    <span className={cn('text-[10px] font-bold leading-none', isActive ? 'text-white' : 'text-slate-500')}>
+                    <span
+                      className={cn(
+                        'text-[10px] leading-none font-bold',
+                        isActive ? 'text-white' : 'text-slate-500',
+                      )}
+                    >
                       {count}
                     </span>
                   </Button>
@@ -142,12 +183,39 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
               })}
             </div>
 
+            <Button className={'h-11 rounded-none'} onClick={handleCreateHere}>
+              여기 기록하기
+            </Button>
             <div className="flex flex-row items-stretch gap-0 border-t border-slate-100 bg-slate-50/30 p-0 sm:justify-start">
-              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-500" onClick={handleReportComplaint}>신고</Button>
+              <Button
+                variant="ghost"
+                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-500"
+                onClick={handleReportComplaint}
+              >
+                신고
+              </Button>
               <div className="w-px bg-slate-100" />
-              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-slate-900" onClick={() => { setAuthMode('edit'); setIsAuthModalOpen(true); }}>수정</Button>
+              <Button
+                variant="ghost"
+                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-slate-900"
+                onClick={() => {
+                  setAuthMode('edit');
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                수정
+              </Button>
               <div className="w-px bg-slate-100" />
-              <Button variant="ghost" className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-600" onClick={() => { setAuthMode('delete'); setIsAuthModalOpen(true); }}>삭제</Button>
+              <Button
+                variant="ghost"
+                className="h-11 flex-1 rounded-none text-[11px] font-medium text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                onClick={() => {
+                  setAuthMode('delete');
+                  setIsAuthModalOpen(true);
+                }}
+              >
+                삭제
+              </Button>
             </div>
           </div>
         </DialogContent>

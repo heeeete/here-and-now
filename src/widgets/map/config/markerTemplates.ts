@@ -66,14 +66,14 @@ export const MARKER_TEMPLATES = {
   `,
 
   // 개별 기록 마커 (그라데이션 말풍선)
-  recordBubble: (comment: string, id: string, isNew?: boolean) => {
+  recordBubble: (comment: string, id: string, isNew?: boolean, isSelected?: boolean, extraCount?: number) => {
     const displayComment = comment.length > 12 ? `${comment.slice(0, 12)}…` : comment;
     const gIndex = getGradientIndex(id);
     const gradient = GRADIENTS[gIndex];
     const repColor = GET_REPRESENTATIVE_COLOR(gIndex);
 
     return `
-    <div class="record-marker">
+    <div class="record-marker ${isSelected ? 'selected' : ''}">
       <div class="speech-bubble" style="
         border: 2.5px solid transparent;
         background-image: linear-gradient(#fff, #fff), ${gradient};
@@ -81,6 +81,30 @@ export const MARKER_TEMPLATES = {
         background-clip: padding-box, border-box;
       ">
         ${displayComment}
+        ${
+          extraCount && extraCount > 0
+            ? `
+          <div style="
+            position: absolute; 
+            top: -6px; 
+            left: -6px; 
+            width: 18px; 
+            height: 18px; 
+            background: #3b82f6; 
+            border: 1.5px solid white;
+            border-radius: 50%; 
+            color: white; 
+            font-size: 9px; 
+            font-weight: 900; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 2;
+          ">+${extraCount}</div>
+        `
+            : ''
+        }
         ${
           isNew
             ? `

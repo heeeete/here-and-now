@@ -142,6 +142,11 @@
   transform: translate(-50%, -124%);
 }
 
+.record-marker.selected {
+  transform: translate(-50%, -140%) scale(1.4);
+  z-index: 1000;
+}
+
 .speech-bubble {
   position: relative;
   display: inline-block;

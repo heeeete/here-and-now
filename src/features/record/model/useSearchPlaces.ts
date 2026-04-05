@@ -28,7 +28,7 @@ export const useSearchPlaces = () => {
     try {
       const response = await fetch(`/api/places/search?query=${encodeURIComponent(query)}&start=1`);
       if (!response.ok) throw new Error('검색 서비스에 문제가 발생했습니다.');
-      
+
       const data = await response.json();
       setSearchResults(data.items || []);
     } catch (error) {
@@ -42,20 +42,20 @@ export const useSearchPlaces = () => {
   // 추가 결과 로드
   const loadMore = useCallback(async () => {
     if (isMoreLoading) return;
-    
+
     const nextStart = startIndex + 5;
     if (nextStart > 1000) return;
 
     setIsMoreLoading(true);
     try {
       const response = await fetch(
-        `/api/places/search?query=${encodeURIComponent(searchTerm)}&start=${nextStart}`
+        `/api/places/search?query=${encodeURIComponent(searchTerm)}&start=${nextStart}`,
       );
       if (!response.ok) throw new Error('추가 검색 결과를 가져오는 중 오류가 발생했습니다.');
 
       const data = await response.json();
       const newItems = data.items || [];
-      
+
       if (newItems.length > 0) {
         setSearchResults((prev) => [...prev, ...newItems]);
         setStartIndex(nextStart);
@@ -68,15 +68,18 @@ export const useSearchPlaces = () => {
   }, [isMoreLoading, searchTerm, startIndex]);
 
   // 장소 선택 (지도 이동 및 핑)
-  const selectPlace = useCallback((place: Place, yOffset: number = 0) => {
-    const lng = parseInt(place.mapx, 10) / 10000000;
-    const lat = parseInt(place.mapy, 10) / 10000000;
+  const selectPlace = useCallback(
+    (place: Place, yOffset: number = 0) => {
+      const lng = parseInt(place.mapx, 10) / 10000000;
+      const lat = parseInt(place.mapy, 10) / 10000000;
 
-    if (isNaN(lat) || isNaN(lng)) return;
+      if (isNaN(lat) || isNaN(lng)) return;
 
-    setCenter(lat, lng, yOffset);
-    setSelectedLocation({ lat, lng });
-  }, [setCenter, setSelectedLocation]);
+      setCenter(lat, lng, yOffset, 18);
+      setSelectedLocation({ lat, lng });
+    },
+    [setCenter, setSelectedLocation],
+  );
 
   const reset = useCallback(() => {
     setSearchTerm('');
@@ -95,6 +98,6 @@ export const useSearchPlaces = () => {
     loadMore,
     selectPlace,
     reset,
-    hasSearched
+    hasSearched,
   };
 };
