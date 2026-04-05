@@ -75,7 +75,7 @@ export const RecordForm = ({
     if (!hidePassword) {
       localStorage.setItem(PASSWORD_STORAGE_KEY, data.password || '');
     }
-    
+
     await onSubmit(data);
   };
 
@@ -84,10 +84,12 @@ export const RecordForm = ({
       {/* 코멘트 */}
       <div className="space-y-2">
         <div className="flex items-center justify-end">
-          <span className={cn(
-            "text-[10px] font-medium",
-            (commentValue || '').length >= 100 ? "text-red-500" : "text-slate-400"
-          )}>
+          <span
+            className={cn(
+              'text-[10px] font-medium',
+              (commentValue || '').length >= 100 ? 'text-red-500' : 'text-slate-400',
+            )}
+          >
             {(commentValue || '').length} / 100
           </span>
         </div>
@@ -127,7 +129,7 @@ export const RecordForm = ({
           type="submit"
           size="lg"
           disabled={isSubmitting}
-          className="w-full bg-blue-600 font-bold text-white shadow-lg hover:bg-blue-700 disabled:bg-slate-200"
+          className="w-full bg-blue-600 font-bold text-white hover:bg-blue-700 disabled:bg-slate-200"
         >
           {isSubmitting ? '처리 중...' : submitLabel}
         </Button>

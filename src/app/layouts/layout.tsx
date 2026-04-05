@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: '지금여기 | 지도에 기록 남기기',
-  description: '지도 위에 지금 기록을 공유하세요.',
+  description: '지도 위에 지금 기록을 남겨보세요.',
 };
 
 export default function RootLayout({
@@ -27,8 +27,7 @@ export default function RootLayout({
 
   return (
     <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
-      <head>
-      </head>
+      <head></head>
       <body className="flex min-h-full flex-col">
         {naverMapClientId && (
           <Script

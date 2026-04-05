@@ -1,7 +1,7 @@
 'use client';
 
 import { Record } from '../model/types';
-import { cn } from '@/src/shared/lib/utils';
+import { cn, formatRelativeTime } from '@/src/shared/lib/utils';
 import { useMapStore } from '@/src/shared/model/useMapStore';
 
 interface RecordItemProps {
@@ -36,26 +36,7 @@ const ReactionBadge = ({ emoji, count, className }: ReactionBadgeProps) => {
 export const RecordItem = ({ record, onClick, variant = 'list', className }: RecordItemProps) => {
   const setCenter = useMapStore((state) => state.setCenter);
 
-  const date = new Date(record.created_at);
-  const now = new Date();
-  
-  // 날짜 비교 (오늘/어제/그외)
-  const isToday = date.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-  const isYesterday = date.toDateString() === yesterday.toDateString();
-
-  const timeString = new Intl.DateTimeFormat('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  }).format(date);
-
-  const displayTime = isToday 
-    ? timeString 
-    : isYesterday 
-      ? `어제 ${timeString}` 
-      : `${date.getMonth() + 1}월 ${date.getDate()}일 ${timeString}`;
+  const displayTime = formatRelativeTime(record.created_at);
 
   const isCard = variant === 'card';
 
