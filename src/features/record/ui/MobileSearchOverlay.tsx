@@ -11,14 +11,16 @@ interface MobileSearchOverlayProps {
 }
 
 export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
-  const { 
-    searchTerm, 
-    setSearchTerm, 
-    searchResults, 
-    isLoading, 
-    search, 
+  const {
+    searchTerm,
+    setSearchTerm,
+    searchResults,
+    isLoading,
+    isMoreLoading,
+    search,
+    loadMore,
     selectPlace,
-    hasSearched
+    hasSearched,
   } = useSearchPlaces();
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -50,7 +52,7 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
           <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
           <Input
             autoFocus
-            placeholder="장소나 주소 검색..."
+            placeholder="장소 검색"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="h-11 rounded-xl bg-slate-50 pl-10 text-base"
@@ -61,7 +63,7 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
       {/* 결과 리스트 */}
       <div className="flex-1 overflow-y-auto p-4">
         {isLoading ? (
-          <div className="py-20 text-center text-slate-400 font-medium">장소를 찾는 중...</div>
+          <div className="py-20 text-center font-medium text-slate-400">장소를 찾는 중...</div>
         ) : searchResults.length > 0 ? (
           <div className="flex flex-col gap-3">
             {searchResults.map((place, idx) => (
@@ -72,6 +74,20 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
                 className="border-slate-100 shadow-none hover:bg-slate-50"
               />
             ))}
+
+            {/* 결과 더 보기 버튼 추가 */}
+            {searchResults.length >= 5 && searchResults.length < 1000 && (
+              <div className="pt-2 pb-8">
+                <Button
+                  variant="outline"
+                  className="h-12 w-full rounded-xl border-slate-200 bg-white text-base font-medium text-slate-700 shadow-none active:bg-slate-50"
+                  onClick={loadMore}
+                  disabled={isMoreLoading}
+                >
+                  {isMoreLoading ? '불러오는 중...' : '결과 더 보기'}
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-20 text-center text-slate-400">

@@ -77,7 +77,7 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
         <form onSubmit={handleSearchSubmit} className="relative mt-4">
           <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-slate-400" />
           <Input
-            placeholder="장소나 주소 검색"
+            placeholder="장소 검색"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="h-11 rounded-2xl border-slate-200 bg-slate-50 pr-3 pl-10 text-[14px] shadow-none placeholder:text-slate-400 focus-visible:bg-white"

@@ -10,6 +10,7 @@ interface RecordState {
   // 액션
   setRecords: (records: Record[]) => void;
   setSelectedRecordId: (id: string | null) => void;
+  updateRecord: (id: string, updates: Partial<Record>) => void;
   
   // 데이터 패칭 비즈니스 로직
   refreshRecords: (bounds?: { minLat: number; maxLat: number; minLng: number; maxLng: number }) => Promise<void>;
@@ -25,6 +26,10 @@ export const useRecordStore = create<RecordState>((set) => ({
   
   setRecords: (records) => set({ records }),
   setSelectedRecordId: (id) => set({ selectedRecordId: id }),
+  updateRecord: (id, updates) => 
+    set((state) => ({
+      records: state.records.map((r) => (r.id === id ? { ...r, ...updates } : r))
+    })),
   
   refreshRecords: async (bounds) => {
     set({ isLoading: true });
