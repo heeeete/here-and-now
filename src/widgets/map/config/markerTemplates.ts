@@ -73,87 +73,91 @@ export const MARKER_TEMPLATES = {
     const repColor = GET_REPRESENTATIVE_COLOR(gIndex);
 
     return `
-    <div class="record-marker ${isSelected ? 'selected' : ''}">
-      <div class="speech-bubble" style="
-        border: 2.5px solid transparent;
-        background-image: linear-gradient(#fff, #fff), ${gradient};
-        background-origin: border-box;
-        background-clip: padding-box, border-box;
-      ">
-        ${displayComment}
-        ${
-          extraCount && extraCount > 0
-            ? `
-          <div style="
-            position: absolute; 
-            top: -6px; 
-            left: -6px; 
-            width: 18px; 
-            height: 18px; 
-            background: #3b82f6; 
-            border: 1.5px solid white;
-            border-radius: 50%; 
-            color: white; 
-            font-size: 9px; 
-            font-weight: 900; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 2;
-          ">+${extraCount}</div>
-        `
-            : ''
-        }
-        ${
-          isNew
-            ? `
-          <div style="
-            position: absolute; 
-            top: -6px; 
-            right: -6px; 
-            width: 16px; 
-            height: 16px; 
-            background: #fbbf24; 
-            border: 1.5px solid white;
-            border-radius: 50%; 
-            color: #92400e; 
-            font-size: 9px; 
-            font-weight: 900; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 1;
-          ">N</div>
-        `
-            : ''
-        }
-        <!-- 꼬리 부분 -->
-        <div style="
-          position: absolute;
-          left: 50%;
-          bottom: -7.5px;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 9px solid transparent;
-          border-right: 9px solid transparent;
-          border-top: 9px solid ${repColor};
-          z-index: -1;
-        "></div>
-        <div style="
-          position: absolute;
-          left: 50%;
-          bottom: -4px;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 7px solid transparent;
-          border-right: 7px solid transparent;
-          border-top: 7px solid #fff;
-          z-index: 0;
-        "></div>
+    <div style="display: flex; flex-direction: column; align-items: center; width: 0; height: 0; overflow: visible;">
+      <div style="transform: translateY(-100%) translateY(-10px);">
+        <div class="record-marker ${isSelected ? 'selected' : ''}">
+          <div class="speech-bubble" style="
+            border: 2.5px solid transparent;
+            background-image: linear-gradient(#fff, #fff), ${gradient};
+            background-origin: border-box;
+            background-clip: padding-box, border-box;
+          ">
+            ${displayComment}
+            ${
+              extraCount && extraCount > 0
+                ? `
+              <div style="
+                position: absolute; 
+                top: -6px; 
+                left: -6px; 
+                width: 18px; 
+                height: 18px; 
+                background: #3b82f6; 
+                border: 1.5px solid white;
+                border-radius: 50%; 
+                color: white; 
+                font-size: 9px; 
+                font-weight: 900; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                z-index: 2;
+              ">+${extraCount}</div>
+            `
+                : ''
+            }
+            ${
+              isNew
+                ? `
+              <div style="
+                position: absolute; 
+                top: -6px; 
+                right: -6px; 
+                width: 16px; 
+                height: 16px; 
+                background: #fbbf24; 
+                border: 1.5px solid white;
+                border-radius: 50%; 
+                color: #92400e; 
+                font-size: 9px; 
+                font-weight: 900; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                z-index: 1;
+              ">N</div>
+            `
+                : ''
+            }
+            <!-- 꼬리 부분 -->
+            <div style="
+              position: absolute;
+              left: 50%;
+              bottom: -7.5px;
+              transform: translateX(-50%);
+              width: 0;
+              height: 0;
+              border-left: 9px solid transparent;
+              border-right: 9px solid transparent;
+              border-top: 9px solid ${repColor};
+              z-index: -1;
+            "></div>
+            <div style="
+              position: absolute;
+              left: 50%;
+              bottom: -4px;
+              transform: translateX(-50%);
+              width: 0;
+              height: 0;
+              border-left: 7px solid transparent;
+              border-right: 7px solid transparent;
+              border-top: 7px solid #fff;
+              z-index: 0;
+            "></div>
+          </div>
+        </div>
       </div>
     </div>
   `;

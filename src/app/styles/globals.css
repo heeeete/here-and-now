@@ -133,17 +133,16 @@
 
 .record-marker {
   position: relative;
-  transform: translate(-50%, -120%);
   cursor: pointer;
-  transition: transform 0.16s ease;
+  transition: all 0.2s ease;
 }
 
 .record-marker:hover {
-  transform: translate(-50%, -124%);
+  transform: translateY(-4px);
 }
 
 .record-marker.selected {
-  transform: translate(-50%, -140%) scale(1.4);
+  transform: scale(1.2) translateY(-10px);
   z-index: 1000;
 }
 

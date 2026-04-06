@@ -35,7 +35,7 @@ export default function HomePage() {
       debounce(
         (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) =>
           refreshRecords(bounds),
-        500,
+        300,
       ),
     [refreshRecords],
   );
