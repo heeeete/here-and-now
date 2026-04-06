@@ -29,12 +29,12 @@ const REACTION_LIST: { type: ReactionType; emoji: string; label: string }[] = [
 /**
  * 모달 내부에 표시될 개별 기록 아이템 컴포넌트
  */
-const RecordDetailItem = ({ 
-  record: initialRecord, 
-  onRefresh 
-}: { 
-  record: Record; 
-  onRefresh?: () => void 
+const RecordDetailItem = ({
+  record: initialRecord,
+  onRefresh,
+}: {
+  record: Record;
+  onRefresh?: () => void;
 }) => {
   const [record, setRecord] = useState<Record>(initialRecord);
   const refreshRecords = useRecordStore((state) => state.refreshRecords);
@@ -75,7 +75,8 @@ const RecordDetailItem = ({
         void refreshRecords();
         onRefresh?.();
       } else if (authMode === 'edit') {
-        const { postVerifyPassword } = await import('@/src/entities/record/api/post-verify-password');
+        const { postVerifyPassword } =
+          await import('@/src/entities/record/api/post-verify-password');
         await postVerifyPassword(record.id, password);
         setVerifiedPassword(password);
         setIsAuthModalOpen(false);
@@ -89,10 +90,10 @@ const RecordDetailItem = ({
   return (
     <div className="flex flex-col border-b border-slate-100 last:border-0">
       <div className="p-5 pb-0">
-        <p className="text-[10px] font-bold text-blue-600 mb-1">
+        <p className="mb-1 text-[10px] font-bold text-blue-600">
           {formatRelativeTime(record.created_at)}
         </p>
-        <h3 className="text-[15px] leading-snug font-bold text-slate-900 break-words">
+        <h3 className="text-[15px] leading-snug font-bold break-words text-slate-900">
           {record.comment}
         </h3>
       </div>
@@ -117,7 +118,9 @@ const RecordDetailItem = ({
               onClick={() => handleReaction(item.type)}
             >
               <span className="text-base leading-none">{item.emoji}</span>
-              <span className={cn('text-[9px] font-bold', isActive ? 'text-white' : 'text-slate-500')}>
+              <span
+                className={cn('text-[9px] font-bold', isActive ? 'text-white' : 'text-slate-500')}
+              >
                 {count}
               </span>
             </Button>
@@ -190,7 +193,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
   const relatedRecords = useMemo(() => {
     if (!selectedRecordId) return [];
     const mainRecord = records.find((r) => r.id === selectedRecordId);
-    
+
     // 만약 선택된 ID의 기록이 없으면, 같은 좌표의 다른 기록이라도 있는지 확인해야 함
     // (삭제 시나리오 대응)
     if (!mainRecord) {
@@ -220,7 +223,7 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
 
   return (
     <Dialog open={!!selectedRecordId} onOpenChange={(open) => !open && setSelectedRecordId(null)}>
-      <DialogContent className="fixed top-auto right-4 bottom-4 left-1/2 flex max-h-[85vh] w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 flex-col overflow-hidden border-0 p-0 sm:max-w-[360px] md:right-4 md:left-auto md:translate-x-0">
+      <DialogContent className="fixed top-auto right-4 bottom-4 left-1/2 flex max-h-[85dvh] w-[calc(100%-2rem)] -translate-x-1/2 translate-y-0 flex-col overflow-hidden border-0 p-0 sm:max-w-[360px] md:right-4 md:left-auto md:translate-x-0">
         <DialogHeader className="shrink-0 border-b bg-white p-4">
           <DialogTitle className="text-sm font-bold text-slate-900">
             이 위치의 기록 <span className="text-blue-600">{relatedRecords.length}</span>개
@@ -233,8 +236,8 @@ export const RecordDetailModal = ({ onRefresh }: RecordDetailModalProps) => {
           ))}
         </div>
 
-        <div className="shrink-0 p-2 bg-slate-50 border-t">
-          <Button className="w-full h-11 rounded-xl font-bold shadow-lg" onClick={handleCreateHere}>
+        <div className="shrink-0 border-t bg-slate-50 p-2">
+          <Button className="h-11 w-full rounded-xl font-bold shadow-lg" onClick={handleCreateHere}>
             나도 여기에 기록하기
           </Button>
         </div>
