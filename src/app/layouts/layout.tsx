@@ -14,9 +14,40 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.NEXT_PUBLIC_VERCEL_URL
+    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+    : 'https://지금여기.com'); // 실제 도메인으로 변경 필요
+
 export const metadata: Metadata = {
   title: '지금여기 | 지도에 기록 남기기',
-  description: '지도 위에 지금 기록을 남겨보세요.',
+  description: '지도 위에 지금 일어나고 있는 일들을 실시간으로 기록하고 공유해보세요.',
+  keywords: ['지도', '기록', '실시간', '지금여기', '장소', '공유', '현장'],
+  authors: [{ name: '지금여기 팀' }],
+  metadataBase: new URL(SITE_URL),
+  openGraph: {
+    title: '지금여기 | 지도에 기록 남기기',
+    description: '지도 위에 지금 일어나고 있는 일들을 실시간으로 기록하고 공유해보세요.',
+    url: SITE_URL,
+    siteName: '지금여기',
+    locale: 'ko_KR',
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.png', // public/og-image.png 파일을 만들어주세요!
+        width: 1200,
+        height: 630,
+        alt: '지금여기 서비스 미리보기',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: '지금여기 | 지도에 기록 남기기',
+    description: '지도 위에 지금 일어나고 있는 일들을 실시간으로 기록하고 공유해보세요.',
+    images: ['/og-image.png'],
+  },
 };
 
 export default function RootLayout({
