@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { ArrowLeft, Search } from 'lucide-react';
 import { Input } from '@/src/shared/ui/input';
 import { Button } from '@/src/shared/ui/button';
@@ -16,9 +17,7 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
     setSearchTerm,
     searchResults,
     isLoading,
-    isMoreLoading,
     search,
-    loadMore,
     selectPlace,
     hasSearched,
   } = useSearchPlaces();
@@ -74,20 +73,6 @@ export const MobileSearchOverlay = ({ onClose }: MobileSearchOverlayProps) => {
                 className="border-slate-100 shadow-none hover:bg-slate-50"
               />
             ))}
-
-            {/* 결과 더 보기 버튼 추가 */}
-            {searchResults.length >= 5 && searchResults.length < 1000 && (
-              <div className="pt-2 pb-8">
-                <Button
-                  variant="outline"
-                  className="h-12 w-full rounded-xl border-slate-200 bg-white text-base font-medium text-slate-700 shadow-none active:bg-slate-50"
-                  onClick={loadMore}
-                  disabled={isMoreLoading}
-                >
-                  {isMoreLoading ? '불러오는 중...' : '결과 더 보기'}
-                </Button>
-              </div>
-            )}
           </div>
         ) : (
           <div className="py-20 text-center text-slate-400">

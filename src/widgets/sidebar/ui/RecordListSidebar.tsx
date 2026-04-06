@@ -23,9 +23,7 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
     setSearchTerm,
     searchResults,
     isLoading,
-    isMoreLoading,
     search,
-    loadMore,
     selectPlace,
     reset,
     hasSearched,
@@ -93,30 +91,15 @@ export const RecordListSidebar = ({ className }: RecordListSidebarProps) => {
                 <p className="text-[14px] text-slate-400">검색 중...</p>
               </div>
             ) : searchResults.length > 0 ? (
-              <>
-                <div className="flex flex-col gap-2">
-                  {searchResults.map((place, idx) => (
-                    <PlaceItem
-                      key={`${place.mapx}-${place.mapy}-${idx}`}
-                      place={place}
-                      onClick={selectPlace}
-                    />
-                  ))}
-                </div>
-
-                {searchResults.length >= 5 && searchResults.length < 1000 && (
-                  <div className="px-1 pt-5 pb-10">
-                    <Button
-                      variant="outline"
-                      className="h-11 w-full rounded-2xl border-slate-200 bg-white text-[14px] font-medium text-slate-700 shadow-none hover:bg-slate-50"
-                      onClick={loadMore}
-                      disabled={isMoreLoading}
-                    >
-                      {isMoreLoading ? '불러오는 중...' : '결과 더 보기'}
-                    </Button>
-                  </div>
-                )}
-              </>
+              <div className="flex flex-col gap-2">
+                {searchResults.map((place, idx) => (
+                  <PlaceItem
+                    key={`${place.mapx}-${place.mapy}-${idx}`}
+                    place={place}
+                    onClick={selectPlace}
+                  />
+                ))}
+              </div>
             ) : hasSearched ? (
               /* 검색을 실제로 수행했는데 결과가 없을 때만 멘트 노출 */
               <div className="flex min-h-[240px] flex-col items-center justify-center px-6 text-center">
