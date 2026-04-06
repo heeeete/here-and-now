@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Locate } from 'lucide-react';
 import { NaverMapProps } from '../model/types';
 import { useNaverMap } from '../model/useNaverMap';
@@ -8,7 +8,7 @@ import { useMarkers } from '../model/useMarkers';
 import { useMapStore } from '@/src/shared/model/useMapStore';
 import { useRecordStore } from '@/src/entities/record/model/useRecordStore';
 import { useMobile } from '@/src/shared/lib/hooks/useMobile';
-import { cn } from '@/src/shared/lib/utils';
+import { cn, debounce } from '@/src/shared/lib/utils';
 
 /**
  * NaverMap 위젯
@@ -18,9 +18,8 @@ import { cn } from '@/src/shared/lib/utils';
 export const NaverMap = ({
   onMapClick,
   onMarkerClick,
-  onBoundsChange,
   className,
-}: Omit<NaverMapProps, 'records' | 'selectedLocation'>) => {
+}: Omit<NaverMapProps, 'records' | 'selectedLocation' | 'onBoundsChange'>) => {
   const isMobile = useMobile();
   // 스토어에서 상태 개별 구독 (Selector)
   const storeCenter = useMapStore((state) => state.center);
@@ -29,8 +28,20 @@ export const NaverMap = ({
   const setSelectedLocation = useMapStore((state) => state.setSelectedLocation);
 
   const records = useRecordStore((state) => state.records);
+  const refreshRecords = useRecordStore((state) => state.refreshRecords);
   const selectedRecordId = useRecordStore((state) => state.selectedRecordId);
   const setSelectedRecordId = useRecordStore((state) => state.setSelectedRecordId);
+
+  // 영역 변경 시 데이터 갱신 (디바운스 적용)
+  const debouncedRefresh = useMemo(
+    () =>
+      debounce(
+        (bounds: { minLat: number; maxLat: number; minLng: number; maxLng: number }) =>
+          refreshRecords(bounds),
+        300,
+      ),
+    [refreshRecords],
+  );
 
   // 1. 지도 인스턴스 초기화 및 기본 이벤트 관리
   const { mapRef, map, moveToCurrentLocation } = useNaverMap((lat, lng) => {
@@ -39,7 +50,7 @@ export const NaverMap = ({
     setSelectedLocation({ lat, lng });
     setSelectedRecordId(null); // 지도 클릭 시 선택된 마커 해제
     onMapClick?.(lat, lng);
-  }, onBoundsChange);
+  }, debouncedRefresh);
 
   // 2. 마커 및 클러스터 관리
   const { renderRecords, updateMyLocationMarker, updateClickMarker } = useMarkers(map, (id) => {
