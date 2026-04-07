@@ -7,6 +7,11 @@
     "next-devtools": {
       "command": "npx",
       "args": ["-y", "next-devtools-mcp@latest"]
+    },
+    "codex": {
+      "command": "codex",
+      "args": ["mcp-server"],
+      "trust": true
     }
   }
 }

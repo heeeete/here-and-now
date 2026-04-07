@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 지금여기 📍
 
-## Getting Started
+**"지금 그곳의 상황과 생각을 자유롭게 기록하세요."**  
+지도 위 특정 위치에 지금 이 순간의 기록을 남기고, 다른 사람들과 실시간으로 공유하는 서비스입니다.
 
-First, run the development server:
+[서비스 바로가기](https://지금여기.com)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## 🚀 Engineering Focus: AI-Native Workflow
+
+본 프로젝트는 **다중 AI 에이전트(Multi-Agent) 파이프라인**을 구축하여 설계, 구현, 검증 프로세스를 체계화하고 개발 효율을 높이는 실험을 진행했습니다.
+
+### 1. Automated Review Loop with MCP
+
+Gemini CLI에 Codex CLI를 MCP 서버로 연결하여, 코드 초안 작성 이후 **Codex 리뷰를 자동으로 호출하고 그 결과를 반영하는 검증 루프**를 구성했습니다.
+
+- **구성 방식:** Gemini CLI의 `mcpServers` 설정에 `codex mcp-server`를 등록
+- **동작 방식:** Gemini가 변경사항 작성 → Codex MCP로 리뷰 요청 → 리뷰 결과를 바탕으로 수정 및 보완
+- **효과:** 단일 에이전트 결과를 그대로 사용하지 않고, 구현과 검증을 분리해 보안·로직 오류를 사전에 줄일 수 있었습니다.
+
+### 2. Multi-Agent Pipeline
+
+- **Gemini CLI:** 전체 코드 베이스를 바탕으로 로직 구현 및 기능 확장 수행
+- **Claude:** 구현된 코드의 아키텍처 적합성 검토 및 최적화 방향 제시
+- **Codex CLI:** 최종 커밋 전 복잡한 로직 검수 및 보안 취약점 리뷰
+
+### 3. Context Optimization: `supabase.md` & FSD
+
+- **전략:** 모든 DB 스키마 정보를 `supabase.md` 파일에 요약하여 관리했습니다.
+- **효과:** AI가 수많은 마이그레이션 파일을 읽는 대신 단일 문서를 통해 스키마를 파악하도록 하여 **토큰 소모를 줄이고 데이터 관계 추론의 정확도**를 높였습니다.
+- **아키텍처:** **FSD(Feature-Sliced Design)** 를 도입하여 코드 간 결합도를 낮춤으로써 AI가 수정 범위를 명확히 인지할 수 있는 환경을 조성했습니다.
+
+### 4. Prompt Structuring with Custom Command
+
+- **문제:** AI에게 원하는 작업 방향을 매번 처음부터 자세히 설명해야 해서 프롬프트 작성 피로가 컸습니다.
+- **해결:** Gemini CLI에 커스텀 커맨드(`/discuss`)를 구성해, 바로 구현하지 않고 먼저 의도를 추론한 뒤 필요한 맥락을 질문하도록 설계했습니다.
+- **효과:** 한 번에 완벽한 지시문을 작성하지 않아도, 질의응답을 통해 요구사항과 문제정의를 빠르게 구체화할 수 있었습니다.
+
+**사용 예시**
+
+```
+🙎: /discuss 게시글 삭제 기능 만들어줘
+
+🤖: 사용자가 게시글 삭제 기능을 원한다
+
+...추론...
+
+질문
+1. 게시글 삭제 후 원하는 동작
+2. 삭제 실패시 어떻게 처리할지
+    2-1. ...
+    2-2. B...
+3. ...
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛡️ Case Study: 클라이언트 측 민감 데이터 노출 방지
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+다중 검증 프로세스를 통해 설계 단계에서의 보안 실수를 인지하고 최적화한 사례입니다.
 
-## Learn More
+- **문제 상황:** 게시물 수정/삭제 시 비밀번호 일치 여부를 확인하기 위해, 해당 레코드 전체를 먼저 조회(Select)한 뒤 클라이언트에서 입력값과 비교하려는 설계 결함이 있었습니다. 이 경우 조회된 레코드에 포함된 원본 비밀번호가 브라우저 네트워크 탭에 그대로 노출되는 보안 취약점이 발생했습니다.
+- **해결 과정:** 최종 리뷰 단계에서 **Codex CLI**가 "비밀번호 검증을 위해 원본 데이터를 클라이언트로 가져오는 방식"의 위험성을 지적했습니다.
+- **조치:** 로직을 수정하여 Supabase의 `.match({ id, password })` 필터링을 사용하도록 변경했습니다. 이를 통해 비밀번호 비교 로직을 데이터베이스 레이어로 위임하고, 클라이언트에는 오직 성공 여부만 전달되도록 개선하여 민감 데이터 노출을 원천 차단했습니다.
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠️ Tech Stack
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **AI Tools:** Gemini CLI, Claude, Codex CLI
+- **Framework:** Next.js 16 (App Router), React 19
+- **State Management:** Zustand
+- **Form & Validation:** React Hook Form, Zod
+- **Backend:** Supabase (Postgres, RLS, RPC)
+- **Styling:** Tailwind CSS v4, shadcn/ui
+- **Map SDK:** NAVER Maps SDK
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ✨ Key Features
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **실시간 위치 기록:** 지도 위 특정 지점을 클릭하여 지금 남기고 싶은 기록을 자유롭게 공유
+- **24시간 자동 만료:** 등록 후 24시간 뒤 제보가 만료되어 '지금'의 정보만 지도에 유지
+- **익명 참여:** 회원가입 없이 비밀번호 설정만으로 게시물 작성 및 수정/삭제 가능
+
+---
