@@ -13,7 +13,11 @@ export async function deleteRecord(id: string, password: string) {
     .select();
 
   if (error) throw error;
-  if (!data || data.length === 0) throw new Error('비밀번호가 일치하지 않거나 기록을 찾을 수 없습니다.');
+  
+  // 데이터가 없으면 비밀번호가 틀린 것으로 간주합니다.
+  if (!data || data.length === 0) {
+    throw new Error('비밀번호가 일치하지 않아요. 다시 한번 확인해 주세요.');
+  }
 
   return true;
 }
