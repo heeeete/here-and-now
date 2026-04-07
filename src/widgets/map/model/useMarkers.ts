@@ -67,69 +67,18 @@ export const useMarkers = (map: naver.maps.Map | null, onMarkerClick?: (id: stri
     (records: Record[], selectedRecordId: string | null) => {
       if (!map) return;
 
-      // const currentZoom = map.getZoom();
-      const projection = map.getProjection();
-
-      /*
-      // 줌 레벨별 클러스터링 반경 (px)
-      const radiusMap: { [zoom: number]: number } = {
-        20: 20,
-        19: 24,
-        18: 28,
-        17: 34,
-        16: 42,
-        15: 52,
-        14: 64,
-      };
-      const clusterRadius = radiusMap[currentZoom] || 80;
-      */
-
-      // 1. 기존 마커 모두 제거 (간단한 구현을 위해 전체 초기화 유지하되, 계산 효율성 증대)
       clearMarkers();
 
-      /*
-      // 2. 클러스터링 계산 (공간 기반 최적화는 추후 고려, 현재는 데이터 무결성 우선)
-      const clusters: {
-        center: Record;
-        centerPixel: naver.maps.Point;
-        count: number;
-        members: Record[];
-      }[] = [];
+      // 1. 타임스탬프 미리 계산 (성능 최적화: 정렬 및 비교 시 Date 객체 생성 비용 제거)
+      const recordsWithTime = records.map((r) => ({
+        ...r,
+        _ts: new Date(r.created_at).getTime(),
+      }));
 
-      records.forEach((record) => {
-        const recordLatLng = new naver.maps.LatLng(record.latitude, record.longitude);
-        const recordPixel = projection.fromCoordToOffset(recordLatLng);
-
-        let addedToCluster = false;
-        for (const cluster of clusters) {
-          const pixelDist = Math.sqrt(
-            Math.pow(cluster.centerPixel.x - recordPixel.x, 2) +
-              Math.pow(cluster.centerPixel.y - recordPixel.y, 2),
-          );
-
-          if (pixelDist <= clusterRadius) {
-            cluster.count++;
-            cluster.members.push(record);
-            addedToCluster = true;
-            break;
-          }
-        }
-
-        if (!addedToCluster) {
-          clusters.push({
-            center: record,
-            centerPixel: recordPixel,
-            count: 1,
-            members: [record],
-          });
-        }
-      });
-      */
-
-      // 동일 좌표(위경도) 기반 그룹화
-      const coordGroups = new Map<string, Record[]>();
+      // 2. 동일 좌표(위경도) 기반 그룹화
+      const coordGroups = new Map<string, (typeof recordsWithTime)[0][]>();
       
-      records.forEach((record) => {
+      recordsWithTime.forEach((record) => {
         const key = `${record.latitude},${record.longitude}`;
         if (!coordGroups.has(key)) {
           coordGroups.set(key, []);
@@ -137,48 +86,40 @@ export const useMarkers = (map: naver.maps.Map | null, onMarkerClick?: (id: stri
         coordGroups.get(key)!.push(record);
       });
 
-      const clusters = Array.from(coordGroups.values()).map((members) => {
-        // 작성일순(오름차순) 정렬하여 가장 오래된 기록을 대표로 선정
-        const sortedMembers = [...members].sort(
-          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-        const center = sortedMembers[0];
-        
-        return {
-          center,
-          centerPixel: projection.fromCoordToOffset(new naver.maps.LatLng(center.latitude, center.longitude)),
-          count: members.length,
-          members: sortedMembers,
-        };
-      });
+      const now = Date.now();
 
       // 3. 마커 생성 및 등록
-      clusters.forEach((cluster) => {
-        const position = new naver.maps.LatLng(cluster.center.latitude, cluster.center.longitude);
+      coordGroups.forEach((members) => {
+        // 이미 계산된 타임스탬프(_ts)를 사용하여 정렬 (내림차순)
+        const sortedMembers = [...members].sort((a, b) => b._ts - a._ts);
         
-        // 개별 기록 마커 (말풍선) - 항상 이 형태를 사용
-        const record = cluster.center;
+        // 그룹 내 선택된 기록이 있다면 우선 노출, 없으면 최신 기록 노출
+        const selectedMember = sortedMembers.find((m) => m.id === selectedRecordId);
+        const center = selectedMember || sortedMembers[0];
         
-        // 해당 좌표 그룹의 멤버 중 하나라도 선택되었는지 확인
-        const isSelected = cluster.members.some((m) => m.id === selectedRecordId);
-        
-        const extraCount = cluster.count > 1 ? cluster.count - 1 : 0;
+        const position = new naver.maps.LatLng(center.latitude, center.longitude);
+        const isSelected = !!selectedMember;
+        const extraCount = members.length > 1 ? members.length - 1 : 0;
 
-        // 2시간 이내면 NEW 뱃지 표시
-        const isNew = new Date().getTime() - new Date(record.created_at).getTime() < 2 * 60 * 60 * 1000;
+        // 2시간 이내면 NEW 뱃지 표시 (미리 계산된 _ts 사용)
+        const isNew = now - center._ts < 2 * 60 * 60 * 1000;
+
+        // 최신 기록이 위로 오도록 생성 시간을 zIndex의 기준으로 활용
+        const timestampZIndex = Math.floor(center._ts / 1000);
+        const zIndex = isSelected ? 2000000000 + timestampZIndex : timestampZIndex;
 
         const marker = new naver.maps.Marker({
           position,
           map,
           icon: {
-            content: MARKER_TEMPLATES.recordBubble(record.comment, record.id, isNew, isSelected, extraCount),
+            content: MARKER_TEMPLATES.recordBubble(center.comment, center.id, isNew, isSelected, extraCount),
             anchor: new naver.maps.Point(0, 0),
           },
-          zIndex: isSelected ? 1000 : 100,
+          zIndex,
         });
 
         naver.maps.Event.addListener(marker, 'click', () => {
-          onMarkerClick?.(record.id);
+          onMarkerClick?.(center.id);
         });
 
         markersRef.current.push(marker);

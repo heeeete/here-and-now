@@ -13,5 +13,18 @@
       "args": ["mcp-server"],
       "trust": true
     }
+  },
+  "hooks": {
+    "AfterTool": [
+      {
+        "matcher": "write_file|replace",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\.gemini\\hooks\\lint-and-tsc.ps1"
+          }
+        ]
+      }
+    ]
   }
 }
