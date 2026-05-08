@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import '../styles/globals.css';
 import { Analytics } from '@vercel/analytics/next';
+import { SITE_URL } from '@/src/shared/lib/site-url';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -14,18 +15,15 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.NEXT_PUBLIC_VERCEL_URL
-    ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-    : 'https://지금여기.com'); // 실제 도메인으로 변경 필요
-
 export const metadata: Metadata = {
   title: '지금여기 | 지도에 기록 남기기',
   description: '지도 위에 지금 일어나고 있는 일들을 실시간으로 기록하고 공유해보세요.',
   keywords: ['지도', '기록', '실시간', '지금여기', '장소', '공유', '현장'],
   authors: [{ name: '지금여기 팀' }],
   metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: '지금여기 | 지도에 기록 남기기',
     description: '지도 위에 지금 일어나고 있는 일들을 실시간으로 기록하고 공유해보세요.',
